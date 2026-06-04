@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Local agent instructions
+AGENTS.md
+
+# Uploads and generated assets
+public/uploads/
+admin/uploads/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# PHP / Composer
+composer.lock
+
+# Build and cache
+.cache/
+coverage/
+*.tsbuildinfo

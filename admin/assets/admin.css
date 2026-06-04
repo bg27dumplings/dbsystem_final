@@ -1,0 +1,54 @@
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 1000;
+  border-radius: .375rem;
+  background: #111827;
+  color: #fff;
+  padding: .75rem 1rem;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(13, 110, 253, .45);
+  outline-offset: 2px;
+}
+
+.stat-card {
+  min-height: 8rem;
+}
+
+.chart-box {
+  min-height: 18rem;
+}
+
+@media (max-width: 767.98px) {
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: .5rem;
+    padding: .75rem;
+  }
+
+  .responsive-table td {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    gap: .75rem;
+    border: 0;
+    padding: .35rem 0;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+  }
+}

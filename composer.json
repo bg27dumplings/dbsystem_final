@@ -1,0 +1,8 @@
+{
+  "name": "campus/share-admin",
+  "description": "Pure PHP admin and captcha dependencies for the campus second-hand sharing system.",
+  "require": {
+    "php": ">=8.1",
+    "gregwar/captcha": "^1.2"
+  }
+}

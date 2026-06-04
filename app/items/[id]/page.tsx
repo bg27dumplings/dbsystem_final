@@ -1,0 +1,55 @@
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { PriceBlock } from "@/components/price-block";
+import { StatusBadge } from "@/components/status-badge";
+import { items } from "@/lib/data";
+
+export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const item = items.find((entry) => entry.id === id);
+  if (!item) notFound();
+
+  return (
+    <article className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
+      <section aria-label="物品照片" className="grid gap-3 sm:grid-cols-2">
+        {item.images.map((src, index) => (
+          <div key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10">
+            <Image src={src} alt={`${item.title} 照片 ${index + 1}`} fill sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" priority={index === 0} />
+          </div>
+        ))}
+      </section>
+      <section className="space-y-5 rounded-lg bg-white p-5 shadow-sm ring-1 ring-campus-ink/10 lg:sticky lg:top-24 lg:self-start">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={item.status} />
+          <span className="rounded-full bg-campus-paper px-3 py-1 text-sm font-bold text-campus-ink">{item.category}</span>
+          <span className="rounded-full bg-campus-paper px-3 py-1 text-sm font-bold text-campus-ink">{item.condition}</span>
+        </div>
+        <div>
+          <h1 className="text-3xl font-black leading-tight text-campus-ink">{item.title}</h1>
+          <p className="mt-2 text-slate-700">{item.seller}</p>
+        </div>
+        <PriceBlock originalPrice={item.originalPrice} salePrice={item.salePrice} />
+        <dl className="grid gap-3 rounded-lg bg-campus-paper p-4 text-sm">
+          <div>
+            <dt className="font-black">交換條件</dt>
+            <dd>{item.exchangeNote}</dd>
+          </div>
+          <div>
+            <dt className="font-black">面交地點</dt>
+            <dd>{item.location}</dd>
+          </div>
+        </dl>
+        <p className="leading-7 text-slate-700">{item.description}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link href="/chat" className="inline-flex min-h-12 items-center justify-center rounded-md border border-campus-moss px-4 py-3 font-black text-campus-moss hover:bg-campus-paper">
+            私聊詢問
+          </Link>
+          <Link href="/appointments" aria-disabled={item.status === "reserved"} className="inline-flex min-h-12 items-center justify-center rounded-md bg-campus-moss px-4 py-3 font-black text-white hover:bg-campus-ink aria-disabled:pointer-events-none aria-disabled:bg-slate-400">
+            {item.status === "reserved" ? "目前預約中" : "提出面交"}
+          </Link>
+        </div>
+      </section>
+    </article>
+  );
+}
