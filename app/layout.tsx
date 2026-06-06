@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-Hant">
-      <body>
+    <html lang="zh-Hant" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ResponsiveShell>{children}</ResponsiveShell>
       </body>
     </html>
