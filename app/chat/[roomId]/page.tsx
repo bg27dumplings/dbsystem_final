@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { requireStudentSession } from "@/lib/auth/guards";
 
-export default function ChatRoomPage() {
+export default async function ChatRoomPage() {
+  await requireStudentSession("/chat");
+
   return (
     <section className="mx-auto max-w-3xl rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10" aria-labelledby="chat-room-heading">
       <div className="border-b border-campus-ink/10 p-4">
@@ -9,11 +12,11 @@ export default function ChatRoomPage() {
       </div>
       <ol className="space-y-3 p-4" aria-label="聊天訊息">
         <li className="max-w-[80%] rounded-lg bg-campus-paper p-3">
-          <p>您好，請問可以在圖書館面交嗎？</p>
+          <p>請問今天晚上可以面交嗎？</p>
           <time className="text-xs text-slate-600">18:10</time>
         </li>
         <li className="ml-auto max-w-[80%] rounded-lg bg-campus-moss p-3 text-white">
-          <p>可以，今晚 18:30。</p>
+          <p>可以，圖書館前面可以嗎？</p>
           <time className="text-xs text-white/80">18:12</time>
         </li>
         <li className="rounded-lg border border-campus-gold bg-amber-50 p-3 text-sm font-bold text-campus-ink">系統：買家已提出面交請求，等待賣家同意。</li>

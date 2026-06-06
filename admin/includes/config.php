@@ -31,6 +31,7 @@ function env_value(string $key, string $default = ''): string
 }
 
 define('DB_HOST', env_value('DB_HOST', '127.0.0.1'));
+define('DB_PORT', env_value('DB_PORT', '3306'));
 define('DB_NAME', env_value('DB_NAME', 'campus_share'));
 define('DB_USER', env_value('DB_USER', 'root'));
 define('DB_PASS', env_value('DB_PASS', ''));

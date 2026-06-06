@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { items } from "@/lib/data";
+import { requireStudentSession } from "@/lib/auth/guards";
 
-export default function ChatPage() {
+export default async function ChatPage() {
+  await requireStudentSession("/chat");
+
   return (
     <section aria-labelledby="chat-heading" className="space-y-4">
       <div>
-        <p className="text-sm font-black text-campus-moss">私聊</p>
+        <p className="text-sm font-black text-campus-moss">聊天</p>
         <h1 id="chat-heading" className="text-3xl font-black text-campus-ink">訊息中心</h1>
       </div>
       <div className="grid gap-3">

@@ -1,7 +1,9 @@
-import { StatusBadge } from "@/components/status-badge";
 import { appointments } from "@/lib/data";
+import { StatusBadge } from "@/components/status-badge";
+import { requireStudentSession } from "@/lib/auth/guards";
 
 export default async function AppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireStudentSession("/appointments");
   const { id } = await params;
   const appointment = appointments.find((entry) => entry.id === id) ?? appointments[0];
 

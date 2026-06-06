@@ -1,7 +1,10 @@
 import { StatusBadge } from "@/components/status-badge";
 import { appointments } from "@/lib/data";
+import { requireStudentSession } from "@/lib/auth/guards";
 
-export default function AppointmentsPage() {
+export default async function AppointmentsPage() {
+  await requireStudentSession("/appointments");
+
   return (
     <section aria-labelledby="appointments-heading" className="space-y-4">
       <div>

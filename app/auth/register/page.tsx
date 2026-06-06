@@ -14,6 +14,11 @@ export default function RegisterPage() {
           <label htmlFor="student-id" className="font-bold">學號</label>
           <input id="student-id" name="student_id" required className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3" />
         </div>
+        <div>
+          <label htmlFor="email" className="font-bold">校園信箱</label>
+          <input id="email" name="email" type="email" autoComplete="email" required className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3" aria-describedby="register-email-help" />
+          <p id="register-email-help" className="mt-2 text-sm text-slate-700">後續忘記密碼與帳號通知會使用校園信箱。</p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="password" className="font-bold">密碼</label>

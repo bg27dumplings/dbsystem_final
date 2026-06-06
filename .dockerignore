@@ -1,0 +1,12 @@
+node_modules
+.next
+vendor
+.git
+.gitignore
+.env
+.env.local
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+public/uploads
+admin/uploads

@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { Home, MessageCircle, PlusCircle, Search, UserRound } from "lucide-react";
+import { StudentLogoutButton } from "@/components/auth/student-logout-button";
+import { getStudentSession } from "@/lib/auth/student-session";
 
 const navItems = [
   { href: "/", label: "首頁", icon: Home },
   { href: "/search", label: "搜尋", icon: Search },
   { href: "/me/items/new", label: "上架", icon: PlusCircle },
-  { href: "/chat", label: "私聊", icon: MessageCircle },
+  { href: "/chat", label: "聊天", icon: MessageCircle },
   { href: "/me/items", label: "我的", icon: UserRound }
 ];
 
-export function ResponsiveShell({ children }: { children: React.ReactNode }) {
+export async function ResponsiveShell({ children }: { children: React.ReactNode }) {
+  const session = await getStudentSession();
+
   return (
     <div className="min-h-screen">
       <a href="#main-content" className="skip-link">
@@ -18,19 +22,31 @@ export function ResponsiveShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-campus-ink/10 bg-campus-paper/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-6">
           <Link href="/" className="rounded-md text-xl font-black tracking-tight text-campus-ink">
-            校園共享
+            智慧校園共享
           </Link>
-          <nav aria-label="主要導覽" className="hidden items-center gap-1 md:flex">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.href} href={item.href} className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-campus-ink hover:bg-white">
-                  <Icon aria-hidden="true" size={18} />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="hidden items-center gap-3 md:flex">
+            <nav aria-label="主要導覽" className="flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link key={item.href} href={item.href} className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-campus-ink hover:bg-white">
+                    <Icon aria-hidden="true" size={18} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            {session ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-campus-ink">{session.name}</span>
+                <StudentLogoutButton />
+              </div>
+            ) : (
+              <Link href="/auth/login" className="inline-flex min-h-11 items-center justify-center rounded-full border border-campus-moss px-4 py-2 text-sm font-black text-campus-moss hover:bg-white">
+                會員登入
+              </Link>
+            )}
+          </div>
         </div>
       </header>
       <main id="main-content" className="mx-auto max-w-7xl px-4 pb-24 pt-5 md:px-6 lg:pb-10">

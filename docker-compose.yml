@@ -1,0 +1,64 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  admin:
+    build:
+      context: .
+      dockerfile: docker/admin/Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - composer_cache:/tmp/composer-cache
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: campus_share
+      DB_USER: root
+      DB_PASS: app_password
+      ADMIN_SESSION_NAME: CAMPUS_ADMIN_SESSID
+      UPLOAD_DIR: public/uploads
+      UPLOAD_PUBLIC_PATH: /uploads
+      CAPTCHA_SESSION_KEY: campus_captcha
+      COMPOSER_CACHE_DIR: /tmp/composer-cache
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -lc "if [ ! -f vendor/autoload.php ]; then composer install --no-interaction; fi && apache2-foreground"
+
+  db:
+    image: mariadb:11.4
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: app_password
+      MYSQL_DATABASE: campus_share
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "127.0.0.1", "-papp_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  db_data:
+  frontend_node_modules:
+  composer_cache:

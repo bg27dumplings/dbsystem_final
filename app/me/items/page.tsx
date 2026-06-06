@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { items } from "@/lib/data";
+import { requireStudentSession } from "@/lib/auth/guards";
 
-export default function MyItemsPage() {
+export default async function MyItemsPage() {
+  await requireStudentSession("/me/items");
+
   return (
     <section aria-labelledby="my-items-heading" className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
