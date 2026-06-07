@@ -39,3 +39,12 @@ composer.lock
 .cache/
 coverage/
 *.tsbuildinfo
+
+# Local planning / Codex scratch files
+codex.md
+skill-list.md
+frontend-design/
+frontend-spec/
+pre-review-checklist/
+test-gen/
+ui-ux-pro-max/
