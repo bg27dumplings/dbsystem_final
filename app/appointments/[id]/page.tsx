@@ -1,11 +1,23 @@
-import { appointments } from "@/lib/data";
+import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { requireStudentSession } from "@/lib/auth/guards";
+import { findAppointmentByIdForStudent } from "@/lib/marketplace/queries";
 
 export default async function AppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireStudentSession("/appointments");
+  const session = await requireStudentSession("/appointments");
   const { id } = await params;
-  const appointment = appointments.find((entry) => entry.id === id) ?? appointments[0];
+  const appointment = await findAppointmentByIdForStudent(session.studentId, id);
+  if (!appointment) {
+    return (
+      <section className="mx-auto max-w-3xl rounded-lg bg-white p-6 shadow-sm ring-1 ring-campus-ink/10">
+        <h1 className="text-2xl font-black text-campus-ink">找不到這筆預約</h1>
+        <p className="mt-3 text-slate-700">這筆預約可能不存在，或不屬於你目前登入的帳號。</p>
+        <Link href="/appointments" className="mt-4 inline-flex min-h-12 items-center justify-center rounded-md bg-campus-moss px-4 py-3 font-black text-white hover:bg-campus-ink">
+          回到預約列表
+        </Link>
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-3xl space-y-4 rounded-lg bg-white p-5 shadow-sm ring-1 ring-campus-ink/10" aria-labelledby="appointment-heading">
@@ -24,11 +36,9 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
         <div><dt className="font-black">地點</dt><dd>{appointment.location}</dd></div>
         <div><dt className="font-black">約定金額</dt><dd>NT$ {appointment.amount}</dd></div>
       </dl>
-      <form className="grid gap-3">
-        <label htmlFor="review" className="font-bold">評論留言</label>
-        <textarea id="review" rows={4} className="rounded-md border border-slate-300 px-3 py-3" placeholder="完成或失敗後留下交易狀況" />
-        <button className="rounded-md bg-campus-moss px-4 py-3 font-black text-white">送出評論</button>
-      </form>
+      <div className="rounded-lg border border-campus-ink/10 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700">
+        評論留言與預約狀態更新功能尚未接到真實流程；目前此頁只顯示真實預約資料，不再提供假表單互動。
+      </div>
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { categories } from "@/lib/data";
+import { categories } from "@/lib/marketplace/catalog";
 
 export function FilterPanel({ compact = false }: { compact?: boolean }) {
   return (

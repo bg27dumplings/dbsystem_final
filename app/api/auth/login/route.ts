@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   if (!studentId) {
     fieldErrors.student_id = "請輸入學號。";
   } else if (!validateStudentIdFormat(studentId)) {
-    fieldErrors.student_id = "學號格式不正確。";
+    fieldErrors.student_id = "學號格式不正確，需為 3 個英文字加 6 個數字，且中間 3 碼為民國入學年。";
   }
 
   if (!password) {
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
-  const result = authenticateStudent(studentId, password);
+  const result = await authenticateStudent(studentId, password);
   if (!result.ok) {
     await clearCaptchaCookie();
 
@@ -53,6 +53,13 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: false,
         formError: "此帳號目前已被凍結，無法登入與上架。若有疑問，請透過帳號協助入口聯繫管理方。"
+      }, { status: 403 });
+    }
+
+    if (result.reason === "deleted") {
+      return NextResponse.json({
+        ok: false,
+        formError: "此帳號已被停用，無法登入。若有疑問，請聯繫管理方。"
       }, { status: 403 });
     }
 

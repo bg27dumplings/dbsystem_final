@@ -8,7 +8,7 @@ require_once __DIR__ . '/includes/layout.php';
 require_admin();
 
 $stats = [
-    'members' => (int) db()->query('SELECT COUNT(*) FROM students')->fetchColumn(),
+    'members' => (int) db()->query("SELECT COUNT(*) FROM students WHERE status <> 'deleted'")->fetchColumn(),
     'frozen' => (int) db()->query("SELECT COUNT(*) FROM students WHERE status = 'frozen'")->fetchColumn(),
     'active_items' => (int) db()->query("SELECT COUNT(*) FROM items WHERE status = 'active'")->fetchColumn(),
     'completed' => (int) db()->query("SELECT COUNT(*) FROM appointments WHERE status = 'completed'")->fetchColumn(),
@@ -32,18 +32,13 @@ $monthRows = db()->query(
 
 admin_header('Dashboard');
 ?>
-<div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
-  <div>
-    <p class="text-success fw-bold mb-1">統計分析及視覺化</p>
-    <h1 class="h2 fw-bold">即時數據看板</h1>
-  </div>
-</div>
+<?php admin_page_header('統計分析及視覺化', '即時數據看板', '用同一套品牌語言觀察會員、物品與交易狀態。'); ?>
 <div class="row g-3 mb-4">
   <?php foreach ([['會員總數', $stats['members']], ['凍結會員', $stats['frozen']], ['上架物品', $stats['active_items']], ['成功交換', $stats['completed']]] as $card): ?>
     <div class="col-6 col-xl-3">
       <section class="card stat-card shadow-sm" aria-label="<?= e($card[0]) ?>">
         <div class="card-body">
-          <p class="text-muted fw-semibold mb-2"><?= e($card[0]) ?></p>
+          <p class="admin-kicker mb-2"><?= e($card[0]) ?></p>
           <p class="display-6 fw-bold mb-0"><?= e((string) $card[1]) ?></p>
         </div>
       </section>
@@ -55,7 +50,9 @@ admin_header('Dashboard');
     <section class="card chart-box shadow-sm">
       <div class="card-body">
         <h2 class="h5 fw-bold">物品類別分佈</h2>
-        <canvas id="categoryChart" aria-label="物品類別分佈圓餅圖" role="img"></canvas>
+        <div class="admin-chart-frame">
+          <canvas id="categoryChart" aria-label="物品類別分佈圓餅圖" role="img"></canvas>
+        </div>
       </div>
     </section>
   </div>
@@ -63,7 +60,9 @@ admin_header('Dashboard');
     <section class="card chart-box shadow-sm">
       <div class="card-body">
         <h2 class="h5 fw-bold">每月新註冊趨勢</h2>
-        <canvas id="memberChart" aria-label="每月新註冊折線圖" role="img"></canvas>
+        <div class="admin-chart-frame">
+          <canvas id="memberChart" aria-label="每月新註冊折線圖" role="img"></canvas>
+        </div>
       </div>
     </section>
   </div>
@@ -78,7 +77,11 @@ new Chart(document.getElementById('categoryChart'), {
     labels: categoryRows.map(row => row.name),
     datasets: [{ data: categoryRows.map(row => Number(row.total)), backgroundColor: ['#256D5A', '#1D5F8D', '#E7A83E', '#B8443C', '#6B7280'] }]
   },
-  options: { responsive: true, maintainAspectRatio: false }
+  options: {
+    animation: false,
+    responsive: true,
+    maintainAspectRatio: false
+  }
 });
 new Chart(document.getElementById('memberChart'), {
   type: 'line',
@@ -86,7 +89,11 @@ new Chart(document.getElementById('memberChart'), {
     labels: monthRows.map(row => row.month),
     datasets: [{ label: '新增會員', data: monthRows.map(row => Number(row.total)), borderColor: '#256D5A', backgroundColor: 'rgba(37,109,90,.15)', tension: .25, fill: true }]
   },
-  options: { responsive: true, maintainAspectRatio: false }
+  options: {
+    animation: false,
+    responsive: true,
+    maintainAspectRatio: false
+  }
 });
 </script>
 <?php admin_footer(); ?>

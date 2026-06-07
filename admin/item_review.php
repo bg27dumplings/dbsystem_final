@@ -48,22 +48,19 @@ $images = $imagesStmt->fetchAll();
 
 admin_header('物品審查詳情');
 ?>
-<div class="mb-4">
-  <p class="text-success fw-bold mb-1">物品審查</p>
-  <h1 class="h2 fw-bold"><?= e($item['title']) ?></h1>
-</div>
+<?php admin_page_header('物品審查', $item['title'], '檢查賣家資訊、內容描述與圖片，並執行處置。'); ?>
 <div class="row g-3">
   <div class="col-12 col-lg-7">
     <section class="card shadow-sm">
       <div class="card-body">
-        <h2 class="h5 fw-bold">物品內容</h2>
-        <dl>
-          <dt>分類</dt><dd><?= e($item['category_name']) ?></dd>
-          <dt>賣家</dt><dd><?= e($item['seller_name'] . ' / ' . $item['student_no']) ?></dd>
-          <dt>狀態</dt><dd><?= e($item['status']) ?></dd>
-          <dt>交換條件</dt><dd><?= e($item['exchange_note']) ?></dd>
-          <dt>地點</dt><dd><?= e($item['location']) ?></dd>
-          <dt>描述</dt><dd><?= nl2br(e($item['description'])) ?></dd>
+        <h2 class="admin-card-title mb-3">物品內容</h2>
+        <dl class="admin-description-list">
+          <div><dt>分類</dt><dd><?= e($item['category_name']) ?></dd></div>
+          <div><dt>賣家</dt><dd><?= e($item['seller_name'] . ' / ' . $item['student_no']) ?></dd></div>
+          <div><dt>狀態</dt><dd><?= admin_status_badge($item['status']) ?></dd></div>
+          <div><dt>交換條件</dt><dd><?= e($item['exchange_note']) ?></dd></div>
+          <div><dt>地點</dt><dd><?= e($item['location']) ?></dd></div>
+          <div><dt>描述</dt><dd><?= nl2br(e($item['description'])) ?></dd></div>
         </dl>
       </div>
     </section>
@@ -71,9 +68,9 @@ admin_header('物品審查詳情');
   <div class="col-12 col-lg-5">
     <section class="card shadow-sm mb-3">
       <div class="card-body">
-        <h2 class="h5 fw-bold">圖片</h2>
+        <h2 class="admin-card-title mb-3">圖片</h2>
         <?php if (!$images): ?>
-          <p class="text-muted">尚無圖片。</p>
+          <div class="admin-empty">尚無圖片。</div>
         <?php endif; ?>
         <div class="row g-2">
           <?php foreach ($images as $image): ?>
@@ -86,7 +83,7 @@ admin_header('物品審查詳情');
     </section>
     <section class="card shadow-sm">
       <div class="card-body">
-        <h2 class="h5 fw-bold">審查操作</h2>
+        <h2 class="admin-card-title mb-3">審查操作</h2>
         <form method="post" class="vstack gap-3">
           <?= csrf_field() ?>
           <input type="hidden" name="item_id" value="<?= e((string) $item['id']) ?>">
@@ -102,7 +99,7 @@ admin_header('物品審查詳情');
             <label for="reason" class="form-label fw-semibold">原因</label>
             <textarea id="reason" name="reason" class="form-control" rows="3"></textarea>
           </div>
-          <button class="btn btn-dark fw-bold" type="submit">送出審查</button>
+          <button class="btn admin-btn admin-btn--primary" type="submit">送出審查</button>
         </form>
       </div>
     </section>

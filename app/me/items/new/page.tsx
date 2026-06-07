@@ -14,7 +14,7 @@ export default async function NewItemPage() {
             點擊或拖曳照片到這裡
           </label>
           <input id="photos" type="file" accept="image/*" multiple className="sr-only" aria-describedby="photos-help" />
-          <p id="photos-help" className="mt-2 text-sm text-slate-700">實作時會阻擋第六張，並顯示上傳進度與失敗重試。</p>
+          <p id="photos-help" className="mt-2 text-sm text-slate-700">目前這個頁面只保留真實表單版型，尚未接到資料庫上架流程。</p>
         </fieldset>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -55,7 +55,7 @@ export default async function NewItemPage() {
             <textarea id="description" rows={5} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3" />
           </div>
         </div>
-        <button className="rounded-md bg-campus-moss px-4 py-3 font-black text-white hover:bg-campus-ink">發布上架</button>
+        <button type="button" className="rounded-md bg-slate-400 px-4 py-3 font-black text-white" disabled>發布上架（尚未開放）</button>
       </form>
     </section>
   );

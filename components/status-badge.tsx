@@ -1,4 +1,4 @@
-import type { AppointmentStatus, ItemStatus } from "@/lib/data";
+import type { AppointmentStatus, ItemStatus } from "@/lib/marketplace/types";
 
 const labels: Record<ItemStatus | AppointmentStatus, string> = {
   active: "上架中",

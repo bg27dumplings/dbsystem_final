@@ -1,34 +1,48 @@
 import "server-only";
-import { findDemoStudent, verifyDemoStudentPassword } from "@/lib/auth/demo-students";
+import { compare } from "bcryptjs";
+import { findStudentByStudentNo } from "@/lib/auth/student-repository";
 
 export function validateStudentIdFormat(studentId: string) {
-  return /^S\d{6}$/i.test(studentId.trim());
+  const normalizedStudentId = studentId.trim().toUpperCase();
+  const match = /^([A-Z]{3})(\d{3})(\d{3})$/.exec(normalizedStudentId);
+  if (!match) {
+    return false;
+  }
+
+  const enrollmentYear = Number(match[2]);
+  const currentRocYear = new Date().getFullYear() - 1911;
+
+  return enrollmentYear >= 1 && enrollmentYear <= currentRocYear + 1;
 }
 
-export function authenticateStudent(studentId: string, password: string) {
+export async function authenticateStudent(studentId: string, password: string) {
   const normalizedStudentId = studentId.trim().toUpperCase();
-  const student = findDemoStudent(normalizedStudentId);
+  const student = await findStudentByStudentNo(normalizedStudentId);
 
   if (!student) {
     return { ok: false as const, reason: "credentials" as const };
+  }
+
+  if (student.status === "deleted") {
+    return { ok: false as const, reason: "deleted" as const };
   }
 
   if (student.status !== "active") {
     return { ok: false as const, reason: "frozen" as const };
   }
 
-  const verifiedStudent = verifyDemoStudentPassword(normalizedStudentId, password);
-  if (!verifiedStudent) {
+  const verified = await compare(password, student.passwordHash);
+  if (!verified) {
     return { ok: false as const, reason: "credentials" as const };
   }
 
   return {
     ok: true as const,
     student: {
-      studentId: verifiedStudent.studentId,
-      studentNo: verifiedStudent.studentNo,
-      name: verifiedStudent.name,
-      status: verifiedStudent.status
+      studentId: student.studentId,
+      studentNo: student.studentNo,
+      name: student.name,
+      status: student.status
     }
   };
 }

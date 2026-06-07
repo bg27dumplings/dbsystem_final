@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { FilterPanel } from "@/components/filter-panel";
 import { ItemCard } from "@/components/item-card";
-import { items } from "@/lib/data";
+import { findPublicItems } from "@/lib/marketplace/queries";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const items = await findPublicItems();
+
   return (
     <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
       <aside className="hidden lg:block">
@@ -29,11 +32,20 @@ export default function HomePage() {
         <div className="lg:hidden">
           <FilterPanel compact />
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
+        {items.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {items.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="目前還沒有上架物品"
+            description="現在資料庫裡還沒有任何公開物品。等第一位同學完成上架後，這裡才會顯示真實內容。"
+            actionLabel="前往上架頁"
+            actionHref="/me/items/new"
+          />
+        )}
       </section>
     </div>
   );

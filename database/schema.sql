@@ -15,7 +15,9 @@ CREATE TABLE students (
   frozen_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_students_status (status)
+  INDEX idx_students_status (status),
+  CONSTRAINT chk_students_student_no_format
+    CHECK (student_no REGEXP '^[A-Z]{3}[0-9]{6}$')
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE admins (

@@ -6,8 +6,3 @@ export type StudentSession = {
   name: string;
   status: StudentStatus;
 };
-
-export type DemoStudentRecord = StudentSession & {
-  email: string;
-  passwordHash: string;
-};

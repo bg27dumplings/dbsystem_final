@@ -1,8 +1,11 @@
+import { EmptyState } from "@/components/empty-state";
 import { FilterPanel } from "@/components/filter-panel";
 import { ItemCard } from "@/components/item-card";
-import { items } from "@/lib/data";
+import { findPublicItems } from "@/lib/marketplace/queries";
 
-export default function SearchPage() {
+export default async function SearchPage() {
+  const items = await findPublicItems();
+
   return (
     <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
       <aside>
@@ -15,11 +18,20 @@ export default function SearchPage() {
             找到剛好需要的二手物資
           </h1>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
+        {items.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            {items.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="目前沒有可搜尋的物品"
+            description="公開物品列表目前是空的，所以搜尋結果不會顯示任何資料。"
+            actionLabel="回首頁"
+            actionHref="/"
+          />
+        )}
       </section>
     </div>
   );

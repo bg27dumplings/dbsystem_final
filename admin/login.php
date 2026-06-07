@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/security.php';
+require_once __DIR__ . '/includes/layout.php';
 
 start_admin_session();
 $error = '';
@@ -35,13 +36,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>管理員登入 - 校園共享後台</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/admin/assets/admin.css" rel="stylesheet">
+  <link href="<?= e(asset_url(__DIR__ . '/../styles/brand-tokens.css', '/styles/brand-tokens.css')) ?>" rel="stylesheet">
+  <link href="<?= e(asset_url(__DIR__ . '/assets/admin.css', '/admin/assets/admin.css')) ?>" rel="stylesheet">
 </head>
-<body class="bg-light">
-  <main class="container py-5">
-    <section class="mx-auto card shadow-sm" style="max-width: 28rem;" aria-labelledby="login-title">
-      <div class="card-body p-4">
-        <h1 id="login-title" class="h3 fw-bold">管理員登入</h1>
+<body class="admin-body">
+  <main class="admin-login">
+    <div class="admin-login__shell">
+      <section class="admin-login__hero" aria-labelledby="admin-login-title">
+        <p class="admin-login__eyebrow">Campus Share Admin</p>
+        <h1 id="admin-login-title" class="admin-login__title mt-3 mb-3">同一個校園共享品牌，給管理端更清楚的資料視角。</h1>
+        <p class="admin-login__description mb-0">這裡保留前台的暖色校園紙感，但用更克制、更高密度的方式承接審查、會員管理與稽核任務。</p>
+        <div class="admin-login__facts">
+          <article class="admin-login__fact">
+            <h2>會員管理</h2>
+            <p>快速查找學生帳號、凍結原因與註冊狀態。</p>
+          </article>
+          <article class="admin-login__fact">
+            <h2>物品審查</h2>
+            <p>針對違規內容執行處置，保留操作紀錄。</p>
+          </article>
+          <article class="admin-login__fact">
+            <h2>操作追蹤</h2>
+            <p>集中檢視最近稽核行為與系統變更痕跡。</p>
+          </article>
+        </div>
+      </section>
+      <section class="admin-login__panel card" aria-labelledby="login-title">
+        <div class="card-body">
+          <p class="admin-kicker mb-2">管理入口</p>
+          <h2 id="login-title" class="h3 fw-bold mb-3">管理員登入</h2>
+          <p class="text-secondary mb-4">請使用具備管理權限的帳號登入後台。</p>
         <?php if ($error): ?>
           <div class="alert alert-danger" id="login-error" role="alert"><?= e($error) ?></div>
         <?php endif; ?>
@@ -55,10 +79,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label for="password" class="form-label fw-semibold">密碼</label>
             <input id="password" name="password" type="password" class="form-control" required autocomplete="current-password">
           </div>
-          <button class="btn btn-dark fw-bold" type="submit">登入後台</button>
+          <button class="btn admin-btn admin-btn--primary" type="submit">登入後台</button>
         </form>
       </div>
-    </section>
+      </section>
+    </div>
   </main>
 </body>
 </html>

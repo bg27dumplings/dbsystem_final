@@ -30,9 +30,30 @@ function env_value(string $key, string $default = ''): string
     return $value === false ? $default : $value;
 }
 
+function project_root(): string
+{
+    return dirname(__DIR__, 2);
+}
+
+function resolve_project_path(string $path): string
+{
+    $normalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, trim($path));
+    if ($normalized === '') {
+        return project_root();
+    }
+
+    if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $normalized) === 1 || str_starts_with($normalized, DIRECTORY_SEPARATOR)) {
+        return $normalized;
+    }
+
+    return project_root() . DIRECTORY_SEPARATOR . ltrim($normalized, DIRECTORY_SEPARATOR);
+}
+
 define('DB_HOST', env_value('DB_HOST', '127.0.0.1'));
 define('DB_PORT', env_value('DB_PORT', '3306'));
 define('DB_NAME', env_value('DB_NAME', 'campus_share'));
 define('DB_USER', env_value('DB_USER', 'root'));
 define('DB_PASS', env_value('DB_PASS', ''));
 define('ADMIN_SESSION_NAME', env_value('ADMIN_SESSION_NAME', 'CAMPUS_ADMIN_SESSID'));
+define('UPLOAD_DIR', resolve_project_path(env_value('UPLOAD_DIR', 'public/uploads')));
+define('UPLOAD_PUBLIC_PATH', env_value('UPLOAD_PUBLIC_PATH', '/uploads'));

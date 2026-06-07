@@ -10,13 +10,13 @@ const config: Config = {
     extend: {
       colors: {
         campus: {
-          ink: "#10231f",
-          moss: "#1f6b57",
-          leaf: "#4f9a76",
-          paper: "#f6f2e8",
-          blue: "#1d5f8d",
-          gold: "#b95f16",
-          red: "#b42318"
+          ink: "rgb(var(--color-campus-ink) / <alpha-value>)",
+          moss: "rgb(var(--color-campus-moss) / <alpha-value>)",
+          leaf: "rgb(var(--color-campus-leaf) / <alpha-value>)",
+          paper: "rgb(var(--color-campus-paper) / <alpha-value>)",
+          blue: "rgb(var(--color-campus-blue) / <alpha-value>)",
+          gold: "rgb(var(--color-campus-gold) / <alpha-value>)",
+          red: "rgb(var(--color-campus-red) / <alpha-value>)"
         }
       },
       boxShadow: {

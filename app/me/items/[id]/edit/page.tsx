@@ -1,21 +1,23 @@
 import Link from "next/link";
-import { items } from "@/lib/data";
 import { requireStudentSession } from "@/lib/auth/guards";
+import { findOwnedItemById } from "@/lib/marketplace/queries";
 import NewItemPage from "../../new/page";
 
 export default async function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireStudentSession("/me/items");
+  const session = await requireStudentSession("/me/items");
   const { id } = await params;
-  if (!items.some((item) => item.id === id)) {
+  const item = await findOwnedItemById(session.studentId, id);
+  if (!item) {
     return (
       <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-campus-ink/10">
-        <h1 className="text-2xl font-black text-campus-ink">Item not found</h1>
-        <p className="mt-3 text-slate-700">The item you want to edit is not available in the current demo data set.</p>
+        <h1 className="text-2xl font-black text-campus-ink">找不到這筆物品</h1>
+        <p className="mt-3 text-slate-700">這筆物品不存在，或不屬於目前登入的帳號。</p>
         <Link href="/me/items" className="mt-4 inline-flex min-h-12 items-center justify-center rounded-md bg-campus-moss px-4 py-3 font-black text-white hover:bg-campus-ink">
-          Back to my items
+          回到我的物品
         </Link>
       </section>
     );
   }
+
   return <NewItemPage />;
 }

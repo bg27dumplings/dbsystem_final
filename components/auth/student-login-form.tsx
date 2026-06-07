@@ -23,7 +23,7 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const [captcha, setCaptcha] = useState("");
-  const [captchaUrl, setCaptchaUrl] = useState(nextCaptchaUrl());
+  const [captchaUrl, setCaptchaUrl] = useState("/api/auth/captcha");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,9 +94,11 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
           value={studentId}
           onChange={(event) => setStudentId(event.target.value.toUpperCase())}
           className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3 text-base outline-none transition focus:border-campus-moss focus:ring-2 focus:ring-campus-moss/20"
+          placeholder="ABC113001"
           aria-invalid={fieldErrors.student_id ? "true" : "false"}
-          aria-describedby={fieldErrors.student_id ? describedBy("student-id", true) : undefined}
+          aria-describedby={`login-student-id-help ${fieldErrors.student_id ? "student-id-error" : ""}`.trim()}
         />
+        <p id="login-student-id-help" className="mt-2 text-sm text-slate-700">請輸入 3 個英文字加 6 個數字的學號，中間 3 碼為民國入學年。</p>
         {fieldErrors.student_id ? (
           <p id="student-id-error" className="mt-2 text-sm font-semibold text-campus-red">
             {fieldErrors.student_id}

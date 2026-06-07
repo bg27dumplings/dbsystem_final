@@ -17,10 +17,7 @@ $logs = db()->query(
 
 admin_header('操作紀錄');
 ?>
-<div class="mb-4">
-  <p class="text-success fw-bold mb-1">Audit log</p>
-  <h1 class="h2 fw-bold">管理員操作紀錄</h1>
-</div>
+<?php admin_page_header('Audit log', '管理員操作紀錄', '保留最近 100 筆關鍵管理操作，方便稽核與追蹤。'); ?>
 <div class="table-responsive">
   <table class="table align-middle responsive-table">
     <thead>
