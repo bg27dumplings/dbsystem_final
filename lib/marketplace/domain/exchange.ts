@@ -4,7 +4,7 @@ import {
 } from "@/lib/marketplace/domain/constants";
 import type { MarketplaceExchangeMode } from "@/lib/marketplace/domain/models";
 
-export type SupportedExchangeMode = Exclude<MarketplaceExchangeMode, "custom">;
+export type SupportedExchangeMode = MarketplaceExchangeMode;
 
 export type ExchangeDescriptor = {
   exchangeMode: MarketplaceExchangeMode;
@@ -88,6 +88,17 @@ export function buildExchangeDescriptor(exchangeMode: SupportedExchangeMode, exc
     };
   }
 
+  if (exchangeMode === "custom") {
+    if (!trimmedValue) {
+      return null;
+    }
+    return {
+      exchangeMode,
+      exchangeLabel: trimmedValue,
+      exchangeValue: trimmedValue
+    };
+  }
+
   if (!trimmedValue) {
     return null;
   }
@@ -125,6 +136,13 @@ export function resolveStoredExchange(
 
   if (normalizedMode === "treat_drink" || normalizedMode === "treat_food") {
     const descriptor = buildExchangeDescriptor(normalizedMode, exchangeValue ?? "");
+    if (descriptor) {
+      return descriptor;
+    }
+  }
+
+  if (normalizedMode === "custom") {
+    const descriptor = buildExchangeDescriptor("custom", exchangeValue ?? "");
     if (descriptor) {
       return descriptor;
     }

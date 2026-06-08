@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { describedBy } from "@/lib/a11y";
 import { MARKETPLACE_EXCHANGE_MODE_LABELS } from "@/lib/marketplace/domain/constants";
@@ -21,7 +21,39 @@ type AppointmentFormResponse = {
   fieldErrors?: CreateAppointmentFieldErrors;
 };
 
-type ExchangeMode = "price" | "treat_drink" | "treat_food" | "free";
+type ExchangeMode = "price" | "treat_drink" | "treat_food" | "free" | "custom";
+
+const CAMPUS_LOCATIONS: { [key: string]: string[] } = {
+  "英才校區": ["網球場", "汽機車停車場", "大門", "英才樓", "寶成演藝廳", "其他"],
+  "民生校區": [
+    "求真樓",
+    "圖書館",
+    "美術樓",
+    "忠義樓",
+    "樂群樓",
+    "中正樓",
+    "音樂樓",
+    "行政樓",
+    "科學樓",
+    "勤樸樓",
+    "教育樓",
+    "環境樓",
+    "數學樓",
+    "側門",
+    "操場",
+    "學生社團",
+    "大門",
+    "其他"
+  ],
+  "宿舍": [
+    "迎曦樓",
+    "大詠絮樓",
+    "小詠絮樓",
+    "莊敬苑",
+    "其他"
+  ],
+  "其他": ["其他"]
+};
 
 export function AppointmentForm({
   itemId,
@@ -36,7 +68,32 @@ export function AppointmentForm({
 }) {
   const router = useRouter();
   const [meetupAt, setMeetupAt] = useState("");
-  const [location, setLocation] = useState(initialLocation);
+
+  // Parse initialLocation for two-level select
+  const parsedLoc = useMemo(() => {
+    const locString = initialLocation || "";
+    const parts = locString.split(" - ");
+    if (parts[0] === "英才校區" || parts[0] === "民生校區" || parts[0] === "宿舍") {
+      const campus = parts[0];
+      const campusDetails = CAMPUS_LOCATIONS[campus] || [];
+      const detail = parts[1];
+      if (detail && campusDetails.includes(detail) && detail !== "其他") {
+        const custom = parts.slice(2).join(" - ");
+        return { campus, detail, custom };
+      } else {
+        const custom = parts.slice(1).join(" - ");
+        return { campus, detail: "其他", custom };
+      }
+    }
+    if (locString === "英才校區" || locString === "民生校區" || locString === "宿舍") {
+      return { campus: locString, detail: "其他", custom: "" };
+    }
+    return { campus: "其他", detail: "其他", custom: locString };
+  }, [initialLocation]);
+
+  const [campus, setCampus] = useState(parsedLoc.campus);
+  const [detailLocation, setDetailLocation] = useState(parsedLoc.detail);
+  const [customLocation, setCustomLocation] = useState(parsedLoc.custom);
   const [exchangeMode, setExchangeMode] = useState<ExchangeMode>(initialExchangeMode);
   const [exchangeValue, setExchangeValue] = useState(initialExchangeValue);
   const [note, setNote] = useState("");
@@ -51,6 +108,16 @@ export function AppointmentForm({
     setFieldErrors({});
 
     try {
+      let combinedLocation = "";
+      if (campus === "其他") {
+        combinedLocation = customLocation.trim();
+      } else if (detailLocation === "其他") {
+        combinedLocation = `${campus} - ${customLocation.trim()}`;
+      } else {
+        const trimmedCustom = customLocation.trim();
+        combinedLocation = trimmedCustom ? `${campus} - ${detailLocation} - ${trimmedCustom}` : `${campus} - ${detailLocation}`;
+      }
+
       const response = await fetch("/api/appointments", {
         method: "POST",
         headers: {
@@ -59,7 +126,7 @@ export function AppointmentForm({
         body: JSON.stringify({
           itemId,
           meetupAt,
-          location,
+          location: combinedLocation,
           exchangeMode,
           exchangeValue,
           note
@@ -115,25 +182,68 @@ export function AppointmentForm({
             </p>
           ) : null}
         </div>
-        <div>
-          <label htmlFor="location" className="font-bold">
-            面交地點
-          </label>
-          <input
-            id="location"
-            name="location"
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
-            placeholder="例如：圖書館一樓、宿舍大廳"
-            aria-invalid={fieldErrors.location ? "true" : "false"}
-            aria-describedby={fieldErrors.location ? describedBy("location", true) : undefined}
-          />
-          {fieldErrors.location ? (
-            <p id="location-error" className="mt-2 text-sm font-semibold text-campus-red">
-              {fieldErrors.location}
-            </p>
+        <div className="sm:col-span-2 grid gap-4 sm:grid-cols-3">
+          <div>
+            <label htmlFor="campus-select" className="font-bold">
+              面交校區
+            </label>
+            <select
+              id="campus-select"
+              value={campus}
+              onChange={(e) => {
+                const nextCampus = e.target.value;
+                setCampus(nextCampus);
+                const details = CAMPUS_LOCATIONS[nextCampus];
+                setDetailLocation(details ? details[0] : "其他");
+                setCustomLocation("");
+              }}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+            >
+              <option value="英才校區">英才校區</option>
+              <option value="民生校區">民生校區</option>
+              <option value="宿舍">宿舍</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          {campus !== "其他" ? (
+            <div>
+              <label htmlFor="detail-select" className="font-bold">
+                面交大樓/特定地點
+              </label>
+              <select
+                id="detail-select"
+                value={detailLocation}
+                onChange={(e) => {
+                  setDetailLocation(e.target.value);
+                  setCustomLocation("");
+                }}
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+              >
+                {CAMPUS_LOCATIONS[campus]?.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
+            </div>
           ) : null}
+          <div>
+            <label htmlFor="custom-location" className="font-bold">
+              {campus === "其他" ? "具體位置描述 / 地址" : "詳細位置 (如：3樓電梯前)"}
+            </label>
+            <input
+              id="custom-location"
+              type="text"
+              required={campus === "其他" || detailLocation === "其他"}
+              value={customLocation}
+              onChange={(e) => setCustomLocation(e.target.value)}
+              placeholder={campus === "其他" ? "請輸入完整地址或位置" : "例如：3樓電梯前"}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+              aria-invalid={fieldErrors.location ? "true" : "false"}
+              aria-describedby={fieldErrors.location ? "location-error" : undefined}
+            />
+          </div>
+          {fieldErrors.location ? <p id="location-error" className="sm:col-span-3 mt-2 text-sm font-semibold text-campus-red">{fieldErrors.location}</p> : null}
         </div>
         <div>
           <label htmlFor="exchange-mode" className="font-bold">
@@ -155,6 +265,7 @@ export function AppointmentForm({
             <option value="treat_drink">{MARKETPLACE_EXCHANGE_MODE_LABELS.treat_drink}</option>
             <option value="treat_food">{MARKETPLACE_EXCHANGE_MODE_LABELS.treat_food}</option>
             <option value="free">free</option>
+            <option value="custom">{MARKETPLACE_EXCHANGE_MODE_LABELS.custom}</option>
           </select>
           {fieldErrors.exchangeMode ? (
             <p id="exchange-mode-error" className="mt-2 text-sm font-semibold text-campus-red">
@@ -221,6 +332,23 @@ export function AppointmentForm({
             <div className="rounded-lg bg-campus-paper px-4 py-3 text-sm font-semibold text-campus-ink">
               此次面交將以免費贈送顯示。
             </div>
+          ) : null}
+          {exchangeMode === "custom" ? (
+            <>
+              <label htmlFor="exchange-value" className="font-bold">
+                交換內容描述
+              </label>
+              <input
+                id="exchange-value"
+                name="exchangeValue"
+                value={exchangeValue}
+                onChange={(event) => setExchangeValue(event.target.value)}
+                placeholder="例如：交換大二英文課本、一個便當等"
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+                aria-invalid={fieldErrors.exchangeValue ? "true" : "false"}
+                aria-describedby={fieldErrors.exchangeValue ? describedBy("exchange-value", true) : undefined}
+              />
+            </>
           ) : null}
           {fieldErrors.exchangeValue ? (
             <p id="exchange-value-error" className="mt-2 text-sm font-semibold text-campus-red">

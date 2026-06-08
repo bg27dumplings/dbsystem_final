@@ -6,7 +6,7 @@ import { findMarketplaceItemActionContext } from "@/lib/marketplace/infrastructu
 import { findItemById } from "@/lib/marketplace/queries";
 
 function toSupportedExchangeMode(exchangeMode: string) {
-  if (exchangeMode === "price" || exchangeMode === "treat_drink" || exchangeMode === "treat_food" || exchangeMode === "free") {
+  if (exchangeMode === "price" || exchangeMode === "treat_drink" || exchangeMode === "treat_food" || exchangeMode === "free" || exchangeMode === "custom") {
     return exchangeMode;
   }
 

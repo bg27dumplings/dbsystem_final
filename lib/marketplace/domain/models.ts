@@ -9,6 +9,7 @@ export type MarketplaceItem = {
   condition: string;
   location: string;
   seller: string;
+  sellerId: string;
   status: ItemStatus;
   originalPrice: number;
   salePrice?: number;
@@ -68,6 +69,8 @@ export type ChatRoomSummary = {
   itemTitle: string;
   counterpartName: string;
   lastMessage: string;
+  isSeller: boolean;
+  unreadCount: number;
 };
 
 export type ChatMessageRecord = {
@@ -76,11 +79,13 @@ export type ChatMessageRecord = {
   time: string;
   isMine: boolean;
   messageType: string;
+  isEdited?: boolean;
 };
 
 export type ChatRoomDetail = {
   roomId: string;
   itemTitle: string;
+  counterpartName: string;
   messages: ChatMessageRecord[];
 };
 

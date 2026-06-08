@@ -4,13 +4,30 @@ import { FilterPanel } from "@/components/filter-panel";
 import { ItemCard } from "@/components/item-card";
 import { findPublicItems } from "@/lib/marketplace/queries";
 
-export default async function HomePage() {
-  const items = await findPublicItems();
+export default async function HomePage({
+  searchParams
+}: {
+  searchParams: Promise<{
+    keyword?: string;
+    categoryId?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  const filter = {
+    keyword: params.keyword,
+    categoryId: params.categoryId,
+    minPrice: params.minPrice && !isNaN(Number(params.minPrice)) ? Number(params.minPrice) : undefined,
+    maxPrice: params.maxPrice && !isNaN(Number(params.maxPrice)) ? Number(params.maxPrice) : undefined
+  };
+
+  const items = await findPublicItems(filter);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
       <aside className="hidden lg:block">
-        <FilterPanel />
+        <FilterPanel searchParams={params} />
       </aside>
       <section aria-labelledby="home-heading" className="space-y-5">
         <div className="rounded-lg border border-campus-ink/10 bg-white p-5 shadow-sm md:p-7">
@@ -30,7 +47,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="lg:hidden">
-          <FilterPanel compact />
+          <FilterPanel compact searchParams={params} />
         </div>
         {items.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

@@ -133,8 +133,12 @@ export async function createAppointment(input: {
     });
     await connection.commit();
 
-    revalidatePath("/appointments");
-    revalidatePath(`/appointments/${appointmentId}`);
+    try {
+      revalidatePath("/appointments");
+      revalidatePath(`/appointments/${appointmentId}`);
+    } catch (e) {
+      console.error("Failed to revalidate cache:", e);
+    }
 
     return {
       ok: true,

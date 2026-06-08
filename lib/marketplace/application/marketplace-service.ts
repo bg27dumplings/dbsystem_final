@@ -10,11 +10,16 @@ import {
   findStudentAppointmentDetailById,
   findStudentAppointments
 } from "@/lib/marketplace/infrastructure/appointment-repository";
-import { findStudentChatRoomById, findStudentChatRooms } from "@/lib/marketplace/infrastructure/chat-repository";
+import { findStudentChatRoomById, findStudentChatRooms, countUnreadChatMessages as findUnreadCount } from "@/lib/marketplace/infrastructure/chat-repository";
 import { findActiveMarketplaceCategories } from "@/lib/marketplace/infrastructure/category-repository";
 
-export async function findPublicItems() {
-  return findPublicMarketplaceItems();
+export async function findPublicItems(filter?: {
+  keyword?: string;
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}) {
+  return findPublicMarketplaceItems(filter);
 }
 
 export async function findItemById(itemId: string) {
@@ -51,6 +56,10 @@ export async function findChatRoomsByStudentId(studentId: number) {
 
 export async function findChatRoomByIdForStudent(studentId: number, roomId: string) {
   return findStudentChatRoomById(studentId, roomId);
+}
+
+export async function countUnreadChatMessages(studentId: number) {
+  return findUnreadCount(studentId);
 }
 
 export async function findActiveCategories() {

@@ -17,7 +17,7 @@ type ItemFormResponse = {
   fieldErrors?: ItemFormFieldErrors;
 };
 
-type SupportedExchangeMode = "price" | "treat_drink" | "treat_food" | "free";
+type SupportedExchangeMode = "price" | "treat_drink" | "treat_food" | "free" | "custom";
 type ItemFormFieldErrors = CreateMarketplaceItemFieldErrors & {
   keptImageIds?: string;
   imageOrder?: string;
@@ -55,7 +55,7 @@ function normalizeSupportedExchangeMode(item?: EditableMarketplaceItem): Support
     return "price";
   }
 
-  if (item.exchangeMode === "price" || item.exchangeMode === "treat_drink" || item.exchangeMode === "treat_food" || item.exchangeMode === "free") {
+  if (item.exchangeMode === "price" || item.exchangeMode === "treat_drink" || item.exchangeMode === "treat_food" || item.exchangeMode === "free" || item.exchangeMode === "custom") {
     return item.exchangeMode;
   }
 
@@ -96,6 +96,40 @@ function moveArrayItem<T>(items: T[], fromIndex: number, direction: -1 | 1) {
   return nextItems;
 }
 
+const SLIDER_CONDITIONS = ["明顯使用", "五成新", "八成新", "九成新", "全新"] as const;
+
+const CAMPUS_LOCATIONS: { [key: string]: string[] } = {
+  "英才校區": ["網球場", "汽機車停車場", "大門", "英才樓", "寶成演藝廳", "其他"],
+  "民生校區": [
+    "求真樓",
+    "圖書館",
+    "美術樓",
+    "忠義樓",
+    "樂群樓",
+    "中正樓",
+    "音樂樓",
+    "行政樓",
+    "科學樓",
+    "勤樸樓",
+    "教育樓",
+    "環境樓",
+    "數學樓",
+    "側門",
+    "操場",
+    "學生社團",
+    "大門",
+    "其他"
+  ],
+  "宿舍": [
+    "迎曦樓",
+    "大詠絮樓",
+    "小詠絮樓",
+    "莊敬苑",
+    "其他"
+  ],
+  "其他": ["其他"]
+};
+
 export function ItemForm({
   categories,
   mode,
@@ -109,7 +143,32 @@ export function ItemForm({
   const [title, setTitle] = useState(item?.title ?? "");
   const [categoryId, setCategoryId] = useState(item?.categoryId ?? categories[0]?.id ?? "");
   const [conditionLabel, setConditionLabel] = useState<string>(item?.conditionLabel ?? MARKETPLACE_CONDITION_OPTIONS[0]);
-  const [location, setLocation] = useState(item?.location ?? "");
+
+  // Parse location for two-level select
+  const parsedLoc = useMemo(() => {
+    const locString = item?.location ?? "";
+    const parts = locString.split(" - ");
+    if (parts[0] === "英才校區" || parts[0] === "民生校區" || parts[0] === "宿舍") {
+      const campus = parts[0];
+      const campusDetails = CAMPUS_LOCATIONS[campus] || [];
+      const detail = parts[1];
+      if (detail && campusDetails.includes(detail) && detail !== "其他") {
+        const custom = parts.slice(2).join(" - ");
+        return { campus, detail, custom };
+      } else {
+        const custom = parts.slice(1).join(" - ");
+        return { campus, detail: "其他", custom };
+      }
+    }
+    if (locString === "英才校區" || locString === "民生校區" || locString === "宿舍") {
+      return { campus: locString, detail: "其他", custom: "" };
+    }
+    return { campus: "其他", detail: "其他", custom: locString };
+  }, [item]);
+
+  const [campus, setCampus] = useState(parsedLoc.campus);
+  const [detailLocation, setDetailLocation] = useState(parsedLoc.detail);
+  const [customLocation, setCustomLocation] = useState(parsedLoc.custom);
   const [exchangeMode, setExchangeMode] = useState<SupportedExchangeMode>(normalizeSupportedExchangeMode(item));
   const [exchangeValue, setExchangeValue] = useState(buildInitialExchangeValue(item));
   const [description, setDescription] = useState(item?.description ?? "");
@@ -173,7 +232,9 @@ export function ItemForm({
   }
 
   function removeImage(token: string) {
-    setImageEntries((current) => current.filter((entry) => entry.token !== token));
+    if (window.confirm("確定要刪除這張照片嗎？")) {
+      setImageEntries((current) => current.filter((entry) => entry.token !== token));
+    }
   }
 
   function moveImage(index: number, direction: -1 | 1) {
@@ -191,7 +252,17 @@ export function ItemForm({
       formData.set("title", title);
       formData.set("categoryId", categoryId);
       formData.set("conditionLabel", conditionLabel);
-      formData.set("location", location);
+      
+      let combinedLocation = "";
+      if (campus === "其他") {
+        combinedLocation = customLocation.trim();
+      } else if (detailLocation === "其他") {
+        combinedLocation = `${campus} - ${customLocation.trim()}`;
+      } else {
+        const trimmedCustom = customLocation.trim();
+        combinedLocation = trimmedCustom ? `${campus} - ${detailLocation} - ${trimmedCustom}` : `${campus} - ${detailLocation}`;
+      }
+      formData.set("location", combinedLocation);
       formData.set("exchangeMode", exchangeMode);
       formData.set("exchangeValue", exchangeValue);
       formData.set("description", description);
@@ -241,24 +312,49 @@ export function ItemForm({
       ) : null}
       <fieldset className="rounded-lg bg-campus-paper p-4">
         <legend className="px-1 font-black">照片，最多五張</legend>
-        <label
-          htmlFor="photos"
-          className="mt-2 block cursor-pointer rounded-md border-2 border-dashed border-campus-moss bg-white p-6 text-center font-bold text-campus-moss"
-        >
-          點擊選擇照片，第一張會作為主圖
-        </label>
-        <input
-          id="photos"
-          name="photos"
-          type="file"
-          accept="image/*"
-          multiple
-          className="sr-only"
-          onChange={handleFileChange}
-          disabled={remainingImageSlots === 0}
-          aria-invalid={fieldErrors.images || fieldErrors.imageOrder || fieldErrors.keptImageIds ? "true" : "false"}
-          aria-describedby={`photos-help ${fieldErrors.images ? "photos-error" : ""}`.trim()}
-        />
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          {/* 從相簿選擇 */}
+          <label
+            htmlFor="photos-gallery"
+            className={`flex flex-col items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-campus-moss bg-white p-4 text-center font-bold text-campus-moss hover:bg-slate-50 transition min-h-[5.5rem] ${remainingImageSlots === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <span className="text-base">📁 從相簿選取照片</span>
+            <span className="text-xs font-normal text-slate-500 mt-1">支援同時選取多張圖片</span>
+          </label>
+          <input
+            id="photos-gallery"
+            name="photos"
+            type="file"
+            accept="image/*"
+            multiple
+            className="sr-only"
+            onChange={handleFileChange}
+            disabled={remainingImageSlots === 0}
+            aria-invalid={fieldErrors.images || fieldErrors.imageOrder || fieldErrors.keptImageIds ? "true" : "false"}
+            aria-describedby={`photos-help ${fieldErrors.images ? "photos-error" : ""}`.trim()}
+          />
+
+          {/* 直接拍照上傳 */}
+          <label
+            htmlFor="photos-camera"
+            className={`flex flex-col items-center justify-center cursor-pointer rounded-xl border-2 border-dashed border-campus-moss bg-white p-4 text-center font-bold text-campus-moss hover:bg-slate-50 transition min-h-[5.5rem] ${remainingImageSlots === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <span className="text-base">📸 開啟相機拍照</span>
+            <span className="text-xs font-normal text-slate-500 mt-1">直接使用相機進行拍攝</span>
+          </label>
+          <input
+            id="photos-camera"
+            name="photos"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="sr-only"
+            onChange={handleFileChange}
+            disabled={remainingImageSlots === 0}
+            aria-invalid={fieldErrors.images || fieldErrors.imageOrder || fieldErrors.keptImageIds ? "true" : "false"}
+            aria-describedby={`photos-help ${fieldErrors.images ? "photos-error" : ""}`.trim()}
+          />
+        </div>
         <p id="photos-help" className="mt-2 text-sm text-slate-700">
           請上傳 1 到 5 張圖片。你可以調整順序，第一張就是封面圖。
         </p>
@@ -353,26 +449,35 @@ export function ItemForm({
           {fieldErrors.categoryId ? <p id="category-error" className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.categoryId}</p> : null}
         </div>
         <div>
-          <label htmlFor="condition" className="font-bold">
-            新舊程度
-          </label>
-          <select
-            id="condition"
-            name="conditionLabel"
-            value={conditionLabel}
-            onChange={(event) => setConditionLabel(event.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+          <div className="flex justify-between items-center">
+            <label htmlFor="condition-slider" className="font-bold">
+              新舊程度：<span className="text-campus-moss text-lg">{conditionLabel}</span>
+            </label>
+          </div>
+          <input
+            id="condition-slider"
+            type="range"
+            min="0"
+            max="4"
+            step="1"
+            value={SLIDER_CONDITIONS.indexOf(conditionLabel as any) === -1 ? 4 : SLIDER_CONDITIONS.indexOf(conditionLabel as any)}
+            onChange={(e) => {
+              const idx = Number(e.target.value);
+              setConditionLabel(SLIDER_CONDITIONS[idx]);
+            }}
+            className="mt-3 w-full accent-campus-moss h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
             aria-invalid={fieldErrors.conditionLabel ? "true" : "false"}
-            aria-describedby={fieldErrors.conditionLabel ? describedBy("condition", true) : undefined}
-          >
-            {MARKETPLACE_CONDITION_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            aria-describedby={fieldErrors.conditionLabel ? describedBy("condition-slider", true) : undefined}
+          />
+          <div className="flex justify-between text-xs text-slate-500 mt-1 px-1">
+            <span>明顯使用</span>
+            <span>五成新</span>
+            <span>八成新</span>
+            <span>九成新</span>
+            <span>全新</span>
+          </div>
           {fieldErrors.conditionLabel ? (
-            <p id="condition-error" className="mt-2 text-sm font-semibold text-campus-red">
+            <p id="condition-slider-error" className="mt-2 text-sm font-semibold text-campus-red">
               {fieldErrors.conditionLabel}
             </p>
           ) : null}
@@ -397,6 +502,7 @@ export function ItemForm({
             <option value="treat_drink">{MARKETPLACE_EXCHANGE_MODE_LABELS.treat_drink}</option>
             <option value="treat_food">{MARKETPLACE_EXCHANGE_MODE_LABELS.treat_food}</option>
             <option value="free">free</option>
+            <option value="custom">{MARKETPLACE_EXCHANGE_MODE_LABELS.custom}</option>
           </select>
           {fieldErrors.exchangeMode ? (
             <p id="exchange-mode-error" className="mt-2 text-sm font-semibold text-campus-red">
@@ -464,27 +570,91 @@ export function ItemForm({
               此物品將以免費贈送顯示。
             </div>
           ) : null}
+          {exchangeMode === "custom" ? (
+            <>
+              <label htmlFor="exchange-value" className="font-bold">
+                交換內容描述
+              </label>
+              <input
+                id="exchange-value"
+                name="exchangeValue"
+                value={exchangeValue}
+                onChange={(event) => setExchangeValue(event.target.value)}
+                placeholder="例如：交換大二英文課本、一個便當等"
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+                aria-invalid={fieldErrors.exchangeValue ? "true" : "false"}
+                aria-describedby={fieldErrors.exchangeValue ? describedBy("exchange-value", true) : undefined}
+              />
+            </>
+          ) : null}
           {fieldErrors.exchangeValue ? (
             <p id="exchange-value-error" className="mt-2 text-sm font-semibold text-campus-red">
               {fieldErrors.exchangeValue}
             </p>
           ) : null}
         </div>
-        <div className="sm:col-span-2">
-          <label htmlFor="location" className="font-bold">
-            面交地點
-          </label>
-          <input
-            id="location"
-            name="location"
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-            placeholder="例如：圖書館一樓、宿舍大廳"
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
-            aria-invalid={fieldErrors.location ? "true" : "false"}
-            aria-describedby={fieldErrors.location ? describedBy("location", true) : undefined}
-          />
-          {fieldErrors.location ? <p id="location-error" className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.location}</p> : null}
+        <div className="sm:col-span-2 grid gap-4 sm:grid-cols-3">
+          <div>
+            <label htmlFor="campus-select" className="font-bold">
+              面交校區
+            </label>
+            <select
+              id="campus-select"
+              value={campus}
+              onChange={(e) => {
+                const nextCampus = e.target.value;
+                setCampus(nextCampus);
+                const details = CAMPUS_LOCATIONS[nextCampus];
+                setDetailLocation(details ? details[0] : "其他");
+                setCustomLocation("");
+              }}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+            >
+              <option value="英才校區">英才校區</option>
+              <option value="民生校區">民生校區</option>
+              <option value="宿舍">宿舍</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          {campus !== "其他" ? (
+            <div>
+              <label htmlFor="detail-select" className="font-bold">
+                面交大樓/特定地點
+              </label>
+              <select
+                id="detail-select"
+                value={detailLocation}
+                onChange={(e) => {
+                  setDetailLocation(e.target.value);
+                  setCustomLocation("");
+                }}
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+              >
+                {CAMPUS_LOCATIONS[campus]?.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+          <div>
+            <label htmlFor="custom-location" className="font-bold">
+              {campus === "其他" ? "具體位置描述 / 地址" : "詳細位置 (如：3樓電梯前)"}
+            </label>
+            <input
+              id="custom-location"
+              type="text"
+              required={campus === "其他" || detailLocation === "其他"}
+              value={customLocation}
+              onChange={(e) => setCustomLocation(e.target.value)}
+              placeholder={campus === "其他" ? "請輸入完整地址或位置" : "例如：3樓電梯前 (選填)"}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+              aria-invalid={fieldErrors.location ? "true" : "false"}
+              aria-describedby={fieldErrors.location ? "location-error" : undefined}
+            />
+          </div>
+          {fieldErrors.location ? <p id="location-error" className="sm:col-span-3 mt-2 text-sm font-semibold text-campus-red">{fieldErrors.location}</p> : null}
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="description" className="font-bold">

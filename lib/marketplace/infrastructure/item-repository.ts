@@ -17,6 +17,7 @@ type ItemRow = RowDataPacket & {
   status: MarketplaceItem["status"];
   category_name: string;
   seller_name: string;
+  seller_id: number;
   image_url: string | null;
 };
 
@@ -84,7 +85,7 @@ export type MarketplaceOwnedItemImageRecord = {
 
 const SELECT_ITEM_FIELDS = `SELECT i.id, i.title, i.description, i.exchange_note, i.condition_label, i.location,
         i.original_price, i.sale_price, i.status, c.name AS category_name,
-        s.name AS seller_name, img.public_url AS image_url
+        s.name AS seller_name, i.student_id AS seller_id, img.public_url AS image_url
  FROM items i
  JOIN categories c ON c.id = i.category_id
  JOIN students s ON s.id = i.student_id
@@ -120,13 +121,40 @@ async function mapRowsToItems(rows: ItemRow[]) {
   return rows.map((row) => mapMarketplaceItem(row, imageMap.get(row.id) ?? (row.image_url ? [row.image_url] : [])));
 }
 
-export async function findPublicMarketplaceItems() {
+export async function findPublicMarketplaceItems(filter?: {
+  keyword?: string;
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}) {
   const pool = getDbPool();
-  const [rows] = await pool.query<ItemRow[]>(
-    `${SELECT_ITEM_FIELDS}
-     WHERE i.status IN ('active', 'reserved') AND s.status = 'active'
-     ORDER BY i.created_at DESC`
-  );
+  let sql = `${SELECT_ITEM_FIELDS}
+     WHERE i.status IN ('active', 'reserved') AND s.status = 'active'`;
+  const params: any[] = [];
+
+  if (filter) {
+    if (filter.keyword && filter.keyword.trim() !== "") {
+      const keywordPattern = `%${filter.keyword.trim()}%`;
+      sql += ` AND (i.title LIKE ? OR i.description LIKE ?)`;
+      params.push(keywordPattern, keywordPattern);
+    }
+    if (filter.categoryId && filter.categoryId.trim() !== "" && filter.categoryId !== "all") {
+      sql += ` AND i.category_id = ?`;
+      params.push(filter.categoryId);
+    }
+    if (filter.minPrice !== undefined && filter.minPrice !== null && !isNaN(filter.minPrice)) {
+      sql += ` AND i.sale_price >= ?`;
+      params.push(filter.minPrice);
+    }
+    if (filter.maxPrice !== undefined && filter.maxPrice !== null && !isNaN(filter.maxPrice)) {
+      sql += ` AND i.sale_price <= ?`;
+      params.push(filter.maxPrice);
+    }
+  }
+
+  sql += ` ORDER BY i.created_at DESC`;
+
+  const [rows] = await pool.query<ItemRow[]>(sql, params);
 
   return mapRowsToItems(rows);
 }

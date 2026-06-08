@@ -21,6 +21,7 @@ type ItemRowShape = {
   status: MarketplaceItem["status"];
   category_name: string;
   seller_name: string;
+  seller_id: number;
   image_url: string | null;
 };
 
@@ -47,6 +48,8 @@ type ChatRoomRowShape = {
   item_title: string;
   counterpart_name: string;
   last_message: string | null;
+  is_seller: number;
+  unread_count: number;
 };
 
 type ChatMessageRowShape = {
@@ -55,6 +58,7 @@ type ChatMessageRowShape = {
   created_at: Date | string;
   sender_id: number | null;
   message_type: string;
+  is_edited: number;
 };
 
 type EditableItemRowShape = {
@@ -115,6 +119,7 @@ export function mapMarketplaceItem(row: ItemRowShape, images: string[] = []): Ma
     condition: row.condition_label,
     location: row.location,
     seller: row.seller_name,
+    sellerId: String(row.seller_id),
     status: row.status,
     originalPrice: Number(row.original_price),
     salePrice: row.sale_price === null ? undefined : Number(row.sale_price),
@@ -224,25 +229,30 @@ export function mapChatRoomSummary(row: ChatRoomRowShape): ChatRoomSummary {
     id: String(row.id),
     itemTitle: row.item_title,
     counterpartName: row.counterpart_name,
-    lastMessage: row.last_message?.trim() || "目前尚無訊息。"
+    lastMessage: row.last_message?.trim() || "目前尚無訊息。",
+    isSeller: row.is_seller === 1,
+    unreadCount: Number(row.unread_count || 0)
   };
 }
 
 export function mapChatRoomDetail(
   roomId: number,
   itemTitle: string,
+  counterpartName: string,
   studentId: number,
   messages: ChatMessageRowShape[]
 ): ChatRoomDetail {
   return {
     roomId: String(roomId),
     itemTitle,
+    counterpartName,
     messages: messages.map((row) => ({
       id: String(row.id),
       body: row.body,
       time: formatDateTime(row.created_at),
       isMine: row.sender_id === studentId,
-      messageType: row.message_type
+      messageType: row.message_type,
+      isEdited: row.is_edited === 1
     }))
   };
 }

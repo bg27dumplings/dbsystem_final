@@ -3,6 +3,7 @@ import { ExchangeSummary } from "@/components/exchange-summary";
 import { ItemActions } from "@/components/items/item-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { findItemById } from "@/lib/marketplace/queries";
+import { getStudentStats } from "@/lib/auth/student-repository";
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,6 +19,8 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
       </section>
     );
   }
+
+  const stats = await getStudentStats(Number(item.sellerId));
 
   return (
     <article className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
@@ -40,7 +43,16 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
         </div>
         <div>
           <h1 className="text-3xl font-black leading-tight text-campus-ink">{item.title}</h1>
-          <p className="mt-2 text-slate-700">{item.seller}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-slate-700">
+            <span className="font-bold">{item.seller}</span>
+            <span className="text-slate-400">|</span>
+            <span>已交易 {stats.totalDeals} 次</span>
+            <span className="text-slate-400">|</span>
+            <span>
+              評價 {stats.avgRating !== null ? `${stats.avgRating} ★` : "暫無"} 
+              {stats.totalReviews > 0 ? ` (${stats.totalReviews} 則)` : ""}
+            </span>
+          </div>
         </div>
         <ExchangeSummary exchangeMode={item.exchangeMode} exchangeLabel={item.exchangeLabel} salePrice={item.salePrice} />
         <dl className="grid gap-3 rounded-lg bg-campus-paper p-4 text-sm">
