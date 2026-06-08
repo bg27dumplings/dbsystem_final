@@ -3,11 +3,13 @@ import { hash } from "bcryptjs";
 import { createStudentSession } from "@/lib/auth/student-session";
 import { createStudent, findStudentByEmail, findStudentByStudentNo } from "@/lib/auth/student-repository";
 import { validateStudentIdFormat } from "@/lib/auth/student-auth";
+import { getDbPool } from "@/lib/db";
 
 type RegisterRequestBody = {
   name?: string;
   student_id?: string;
   email?: string;
+  email_code?: string;
   password?: string;
   confirm_password?: string;
 };
@@ -17,6 +19,7 @@ export async function POST(request: Request) {
   const name = body.name?.trim() ?? "";
   const studentId = body.student_id?.trim().toUpperCase() ?? "";
   const email = body.email?.trim().toLowerCase() ?? "";
+  const emailCode = body.email_code?.trim() ?? "";
   const password = body.password ?? "";
   const confirmPassword = body.confirm_password ?? "";
   const fieldErrors: Record<string, string> = {};
@@ -41,6 +44,10 @@ export async function POST(request: Request) {
     fieldErrors.password = "請輸入密碼。";
   } else if (password.length < 8) {
     fieldErrors.password = "密碼至少需要 8 個字元。";
+  }
+
+  if (!emailCode) {
+    fieldErrors.email_code = "請輸入信箱驗證碼。";
   }
 
   if (!confirmPassword) {
@@ -77,6 +84,28 @@ export async function POST(request: Request) {
       formError: "此帳號資料已存在，請改用其他學號或信箱。"
     }, { status: 409 });
   }
+
+  // Verify email verification code
+  const pool = getDbPool();
+  const [verifications] = await pool.execute<any[]>(
+    `SELECT code, expires_at FROM email_verifications WHERE email = ?`,
+    [email]
+  );
+  
+  const verification = verifications[0];
+  if (!verification || verification.code !== emailCode || new Date(verification.expires_at).getTime() < Date.now()) {
+    return NextResponse.json({
+      ok: false,
+      fieldErrors: { email_code: "驗證碼不正確或已過期。" },
+      formError: "註冊失敗，信箱驗證未通過。"
+    }, { status: 400 });
+  }
+
+  // Delete verification code
+  await pool.execute(
+    `DELETE FROM email_verifications WHERE email = ?`,
+    [email]
+  );
 
   const passwordHash = await hash(password, 10);
   const student = await createStudent({
