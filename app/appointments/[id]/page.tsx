@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { ExchangeSummary } from "@/components/exchange-summary";
 import { StatusBadge } from "@/components/status-badge";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findAppointmentByIdForStudent } from "@/lib/marketplace/queries";
 
 export default async function AppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requireStudentSession("/appointments");
   const { id } = await params;
+  const session = await requireStudentSession(`/appointments/${id}`);
   const appointment = await findAppointmentByIdForStudent(session.studentId, id);
   if (!appointment) {
     return (
@@ -34,10 +35,16 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
         <div><dt className="font-black">賣家</dt><dd>{appointment.seller}</dd></div>
         <div><dt className="font-black">時間</dt><dd>{appointment.time}</dd></div>
         <div><dt className="font-black">地點</dt><dd>{appointment.location}</dd></div>
-        <div><dt className="font-black">約定金額</dt><dd>NT$ {appointment.amount}</dd></div>
+        <div>
+          <dt className="font-black">交換方式</dt>
+          <dd className="mt-1">
+            <ExchangeSummary exchangeMode={appointment.exchangeMode} exchangeLabel={appointment.exchangeLabel} />
+          </dd>
+        </div>
+        {appointment.note ? <div><dt className="font-black">備註</dt><dd>{appointment.note}</dd></div> : null}
       </dl>
       <div className="rounded-lg border border-campus-ink/10 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700">
-        評論留言與預約狀態更新功能尚未接到真實流程；目前此頁只顯示真實預約資料，不再提供假表單互動。
+        目前第一波已完成真實建立與查看流程；預約狀態更新、取消、完成與評價會在下一波接續補上。
       </div>
     </section>
   );

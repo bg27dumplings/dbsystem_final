@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { ExchangeSummary } from "@/components/exchange-summary";
 import { StatusBadge } from "@/components/status-badge";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findAppointmentsByStudentId } from "@/lib/marketplace/queries";
@@ -22,7 +24,14 @@ export default async function AppointmentsPage() {
                 <span className="text-sm font-bold text-slate-700">{appointment.time}</span>
               </div>
               <h2 className="mt-2 text-xl font-black text-campus-ink">{appointment.itemTitle}</h2>
-              <p className="text-slate-700">{appointment.location}，約定金額 NT$ {appointment.amount}</p>
+              <p className="text-sm text-slate-700">{appointment.location}</p>
+              <div className="mt-2">
+                <ExchangeSummary exchangeMode={appointment.exchangeMode} exchangeLabel={appointment.exchangeLabel} />
+              </div>
+              {appointment.note ? <p className="mt-2 text-sm text-slate-700">{appointment.note}</p> : null}
+              <Link href={`/appointments/${appointment.id}`} className="mt-3 inline-flex min-h-12 items-center justify-center rounded-md border border-campus-moss px-4 py-3 font-black text-campus-moss hover:bg-campus-paper">
+                查看詳情
+              </Link>
             </article>
           ))}
         </div>

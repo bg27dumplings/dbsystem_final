@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
-import { PriceBlock } from "@/components/price-block";
+import { ExchangeSummary } from "@/components/exchange-summary";
+import { ItemActions } from "@/components/items/item-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { findItemById } from "@/lib/marketplace/queries";
 
@@ -24,7 +24,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
       <section aria-label="物品照片" className="grid gap-3 sm:grid-cols-2">
         {item.images.length > 0 ? item.images.map((src, index) => (
           <div key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10">
-            <Image src={src} alt={`${item.title} 照片 ${index + 1}`} fill sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" priority={index === 0} />
+            <img src={src} alt={`${item.title} 照片 ${index + 1}`} className="h-full w-full object-cover" />
           </div>
         )) : (
           <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-white px-6 text-center text-sm font-bold text-campus-ink/70 shadow-sm ring-1 ring-campus-ink/10 sm:col-span-2">
@@ -42,11 +42,11 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           <h1 className="text-3xl font-black leading-tight text-campus-ink">{item.title}</h1>
           <p className="mt-2 text-slate-700">{item.seller}</p>
         </div>
-        <PriceBlock originalPrice={item.originalPrice} salePrice={item.salePrice} />
+        <ExchangeSummary exchangeMode={item.exchangeMode} exchangeLabel={item.exchangeLabel} salePrice={item.salePrice} />
         <dl className="grid gap-3 rounded-lg bg-campus-paper p-4 text-sm">
           <div>
             <dt className="font-black">交換條件</dt>
-            <dd>{item.exchangeNote}</dd>
+            <dd>{item.exchangeLabel}</dd>
           </div>
           <div>
             <dt className="font-black">面交地點</dt>
@@ -54,14 +54,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           </div>
         </dl>
         <p className="leading-7 text-slate-700">{item.description}</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Link href="/chat" className="inline-flex min-h-12 items-center justify-center rounded-md border border-campus-moss px-4 py-3 font-black text-campus-moss hover:bg-campus-paper">
-            私聊詢問
-          </Link>
-          <Link href="/appointments" aria-disabled={item.status === "reserved"} className="inline-flex min-h-12 items-center justify-center rounded-md bg-campus-moss px-4 py-3 font-black text-white hover:bg-campus-ink aria-disabled:pointer-events-none aria-disabled:bg-slate-400">
-            {item.status === "reserved" ? "目前預約中" : "提出面交"}
-          </Link>
-        </div>
+        <ItemActions itemId={item.id} itemStatus={item.status} />
       </section>
     </article>
   );

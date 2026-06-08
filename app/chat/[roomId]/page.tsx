@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { ChatComposer } from "@/components/chat/chat-composer";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findChatRoomByIdForStudent } from "@/lib/marketplace/queries";
 
 export default async function ChatRoomPage({ params }: { params: Promise<{ roomId: string }> }) {
-  const session = await requireStudentSession("/chat");
   const { roomId } = await params;
+  const session = await requireStudentSession(`/chat/${roomId}`);
   const room = await findChatRoomByIdForStudent(session.studentId, roomId);
   if (!room) {
     return (
@@ -45,10 +46,8 @@ export default async function ChatRoomPage({ params }: { params: Promise<{ roomI
           </li>
         )}
       </ol>
-      <div className="grid gap-3 border-t border-campus-ink/10 p-4 sm:grid-cols-[1fr_auto]">
-        <div className="rounded-md border border-slate-300 bg-slate-50 px-3 py-3 text-sm text-slate-700">
-          即時傳訊與提出面交的送出流程尚未接到真實後端；目前這裡只顯示真實聊天室資料。
-        </div>
+      <ChatComposer roomId={room.roomId} />
+      <div className="flex justify-end border-t border-campus-ink/10 px-4 pb-4">
         <Link href="/appointments" className="inline-flex items-center justify-center rounded-md border border-campus-moss px-4 py-3 font-black text-campus-moss">
           查看預約
         </Link>

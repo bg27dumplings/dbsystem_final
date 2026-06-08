@@ -113,6 +113,8 @@ CREATE TABLE appointments (
   meetup_at DATETIME NOT NULL,
   location VARCHAR(120) NOT NULL,
   amount DECIMAL(12,2) NOT NULL,
+  exchange_mode VARCHAR(24) NOT NULL DEFAULT 'price',
+  exchange_value VARCHAR(255) NULL,
   note TEXT NULL,
   status VARCHAR(32) NOT NULL DEFAULT 'pending',
   completed_at DATETIME NULL,
