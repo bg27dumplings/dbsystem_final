@@ -1,6 +1,9 @@
-import { categories } from "@/lib/marketplace/catalog";
+import { ALL_MARKETPLACE_CATEGORIES_LABEL } from "@/lib/marketplace/catalog";
+import { findActiveCategories } from "@/lib/marketplace/queries";
 
-export function FilterPanel({ compact = false }: { compact?: boolean }) {
+export async function FilterPanel({ compact = false }: { compact?: boolean }) {
+  const categories = await findActiveCategories();
+
   return (
     <form className={`rounded-lg bg-white p-4 shadow-sm ring-1 ring-campus-ink/10 ${compact ? "" : "lg:sticky lg:top-24"}`} aria-label="物品篩選">
       <div className="space-y-4">
@@ -13,9 +16,12 @@ export function FilterPanel({ compact = false }: { compact?: boolean }) {
         <fieldset>
           <legend className="text-sm font-bold text-campus-ink">分類</legend>
           <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="rounded-full border border-campus-moss/30 bg-campus-paper px-3 py-1.5 text-sm font-bold text-campus-ink hover:bg-white">
+              {ALL_MARKETPLACE_CATEGORIES_LABEL}
+            </button>
             {categories.map((category) => (
-              <button key={category} type="button" className="rounded-full border border-campus-moss/30 bg-campus-paper px-3 py-1.5 text-sm font-bold text-campus-ink hover:bg-white">
-                {category}
+              <button key={category.id} type="button" className="rounded-full border border-campus-moss/30 bg-campus-paper px-3 py-1.5 text-sm font-bold text-campus-ink hover:bg-white">
+                {category.name}
               </button>
             ))}
           </div>
