@@ -10,6 +10,14 @@ type LoginRequestBody = {
   returnTo?: string;
 };
 
+function normalizeReturnTo(returnTo?: string) {
+  if (!returnTo || !returnTo.startsWith("/") || returnTo.startsWith("//")) {
+    return "/";
+  }
+
+  return returnTo;
+}
+
 export async function POST(request: Request) {
   const body = (await request.json()) as LoginRequestBody;
   const studentId = body.student_id?.trim() ?? "";
@@ -74,6 +82,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    redirectTo: "/"
+    redirectTo: normalizeReturnTo(body.returnTo)
   });
 }

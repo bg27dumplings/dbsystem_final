@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { describedBy } from "@/lib/a11y";
 
 type FieldKey = "name" | "student_id" | "email" | "password" | "confirm_password";
@@ -16,7 +15,6 @@ type RegisterResponse = {
 };
 
 export function StudentRegisterForm() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [studentId, setStudentId] = useState("");
   const [email, setEmail] = useState("");
@@ -54,8 +52,8 @@ export function StudentRegisterForm() {
         return;
       }
 
-      router.push(result.redirectTo ?? "/");
-      router.refresh();
+      window.location.assign(result.redirectTo ?? "/");
+      return;
     } catch {
       setFormError("系統忙碌中，請稍後再試。");
     } finally {

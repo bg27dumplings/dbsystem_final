@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
 import { describedBy } from "@/lib/a11y";
 
 type FieldErrors = Partial<Record<"student_id" | "password" | "captcha", string>>;
@@ -18,8 +18,24 @@ function nextCaptchaUrl() {
   return `/api/auth/captcha?ts=${Date.now()}`;
 }
 
+function normalizeReturnTo(returnTo?: string | null) {
+  if (!returnTo || !returnTo.startsWith("/") || returnTo.startsWith("//")) {
+    return "/";
+  }
+
+  return returnTo;
+}
+
+function resolvePostLoginTarget(resultRedirectTo: string | undefined, effectiveReturnTo: string) {
+  const normalizedResult = normalizeReturnTo(resultRedirectTo);
+  if (effectiveReturnTo !== "/" && normalizedResult === "/") {
+    return effectiveReturnTo;
+  }
+
+  return normalizedResult;
+}
+
 export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
-  const router = useRouter();
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const [captcha, setCaptcha] = useState("");
@@ -27,9 +43,14 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [effectiveReturnTo, setEffectiveReturnTo] = useState(() => normalizeReturnTo(returnTo));
 
   useEffect(() => {
     setCaptchaUrl(nextCaptchaUrl());
+    if (!returnTo && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setEffectiveReturnTo(normalizeReturnTo(params.get("returnTo")));
+    }
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -48,7 +69,7 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
           student_id: studentId,
           password,
           captcha,
-          returnTo
+          returnTo: effectiveReturnTo
         })
       });
 
@@ -62,8 +83,8 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
         return;
       }
 
-      router.push(result.redirectTo ?? "/");
-      router.refresh();
+      window.location.assign(resolvePostLoginTarget(result.redirectTo, effectiveReturnTo));
+      return;
     } catch {
       setFormError("系統忙碌中，請稍後再試。");
       setCaptcha("");
@@ -80,7 +101,7 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
           {formError}
         </div>
       ) : null}
-      <input type="hidden" name="returnTo" value={returnTo ?? ""} />
+      <input type="hidden" name="returnTo" value={effectiveReturnTo} />
       <div>
         <label htmlFor="student-id" className="font-bold text-campus-ink">
           學號
@@ -137,13 +158,15 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
           </div>
           <button
             type="button"
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-campus-moss px-3 py-2 text-sm font-black text-campus-moss hover:bg-white"
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-campus-moss px-3 py-2 text-campus-moss hover:bg-white"
             onClick={() => {
               setCaptcha("");
               setCaptchaUrl(nextCaptchaUrl());
             }}
+            aria-label="重新產生驗證碼"
+            title="重新產生驗證碼"
           >
-            重新產生
+            <RefreshCw aria-hidden="true" size={16} strokeWidth={2.5} />
           </button>
         </div>
         <div className="mt-4 overflow-hidden rounded-2xl border border-campus-ink/10 bg-white">

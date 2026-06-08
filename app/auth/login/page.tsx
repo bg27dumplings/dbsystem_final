@@ -2,11 +2,19 @@ import { redirect } from "next/navigation";
 import { StudentLoginForm } from "@/components/auth/student-login-form";
 import { getStudentSession } from "@/lib/auth/student-session";
 
+function normalizeReturnTo(returnTo?: string) {
+  if (!returnTo || !returnTo.startsWith("/") || returnTo.startsWith("//")) {
+    return "/";
+  }
+
+  return returnTo;
+}
+
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
   const [session, { returnTo }] = await Promise.all([getStudentSession(), searchParams]);
 
   if (session) {
-    redirect("/");
+    redirect(normalizeReturnTo(returnTo));
   }
 
   return (
