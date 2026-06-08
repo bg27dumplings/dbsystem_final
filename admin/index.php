@@ -2,33 +2,16 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/dashboard.php';
 require_once __DIR__ . '/includes/security.php';
 require_once __DIR__ . '/includes/layout.php';
 
 require_admin();
 
-$stats = [
-    'members' => (int) db()->query("SELECT COUNT(*) FROM students WHERE status <> 'deleted'")->fetchColumn(),
-    'frozen' => (int) db()->query("SELECT COUNT(*) FROM students WHERE status = 'frozen'")->fetchColumn(),
-    'active_items' => (int) db()->query("SELECT COUNT(*) FROM items WHERE status = 'active'")->fetchColumn(),
-    'completed' => (int) db()->query("SELECT COUNT(*) FROM appointments WHERE status = 'completed'")->fetchColumn(),
-];
-
-$categoryRows = db()->query(
-    "SELECT c.name, COUNT(i.id) AS total
-     FROM categories c
-     LEFT JOIN items i ON i.category_id = c.id
-     GROUP BY c.id, c.name
-     ORDER BY c.sort_order"
-)->fetchAll();
-
-$monthRows = db()->query(
-    "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS total
-     FROM students
-     GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-     ORDER BY month
-     LIMIT 6"
-)->fetchAll();
+$dashboard = get_dashboard_snapshot();
+$stats = $dashboard['stats'];
+$categoryRows = $dashboard['categoryRows'];
+$monthRows = $dashboard['monthRows'];
 
 admin_header('Dashboard');
 ?>

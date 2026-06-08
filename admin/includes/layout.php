@@ -20,7 +20,9 @@ function admin_header(string $title): void
     echo '<title>' . e($title) . ' - 校園共享後台</title>';
     echo '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">';
     echo '<link href="' . e(asset_url(dirname(__DIR__, 2) . '/styles/brand-tokens.css', '/styles/brand-tokens.css')) . '" rel="stylesheet">';
-    echo '<link href="' . e(asset_url(__DIR__ . '/../assets/admin.css', '/admin/assets/admin.css')) . '" rel="stylesheet">';
+    echo '<link href="' . e(asset_url(__DIR__ . '/../assets/admin-core.css', '/admin/assets/admin-core.css')) . '" rel="stylesheet">';
+    echo '<link href="' . e(asset_url(__DIR__ . '/../assets/admin-auth.css', '/admin/assets/admin-auth.css')) . '" rel="stylesheet">';
+    echo '<link href="' . e(asset_url(__DIR__ . '/../assets/admin-responsive.css', '/admin/assets/admin-responsive.css')) . '" rel="stylesheet">';
     echo '</head><body class="admin-body">';
     echo '<a class="skip-link" href="#admin-main">跳到主要內容</a>';
     echo '<nav class="navbar navbar-expand-lg admin-navbar"><div class="container-fluid admin-navbar__inner">';

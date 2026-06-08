@@ -1,0 +1,61 @@
+@media (max-width: 991.98px) {
+  .admin-login__panel {
+    max-width: none;
+    justify-self: stretch;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .admin-main {
+    padding-block: 1.25rem 5.5rem;
+  }
+
+  .chart-box {
+    height: 20rem;
+  }
+
+  .admin-page-header {
+    padding: 1.15rem;
+  }
+
+  .table-responsive {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .responsive-table tr {
+    display: block;
+    border: 1px solid rgb(var(--color-border-soft) / 0.08);
+    border-radius: var(--radius-md);
+    background: rgb(var(--color-bg-panel) / 0.98);
+    box-shadow: var(--shadow-soft), var(--shadow-inset);
+    padding: 0.9rem 1rem;
+  }
+
+  .responsive-table td {
+    display: grid;
+    grid-template-columns: minmax(5.25rem, 7rem) 1fr;
+    gap: 0.75rem;
+    border: 0;
+    padding: 0.45rem 0;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    color: rgb(var(--color-text-muted));
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}

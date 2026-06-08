@@ -1,0 +1,114 @@
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.admin-login__shell {
+  display: grid;
+  gap: 1.5rem;
+  width: min(100%, 68rem);
+}
+
+.admin-login__hero,
+.admin-login__panel {
+  border: 1px solid rgb(var(--color-border-soft) / 0.08);
+  border-radius: calc(var(--radius-lg) + 0.2rem);
+  background: rgb(var(--color-bg-panel) / 0.98);
+  box-shadow: var(--shadow-card), var(--shadow-inset);
+}
+
+.admin-login__hero {
+  background:
+    linear-gradient(140deg, rgb(var(--color-campus-paper) / 0.96), rgb(var(--color-bg-panel) / 0.98)),
+    radial-gradient(circle at top right, rgb(var(--color-campus-gold) / 0.12), transparent 16rem);
+  padding: 2rem;
+}
+
+.admin-login__eyebrow {
+  color: rgb(var(--color-campus-moss));
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.admin-login__title {
+  color: rgb(var(--color-campus-ink));
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.admin-login__description {
+  color: rgb(var(--color-text-muted));
+  font-size: 1rem;
+  line-height: 1.75;
+  max-width: 38rem;
+}
+
+.admin-login__facts {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin-top: 1.5rem;
+}
+
+.admin-login__fact {
+  border-radius: var(--radius-md);
+  background: rgb(var(--color-bg-panel) / 0.86);
+  padding: 1rem;
+}
+
+.admin-login__fact h2 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+
+.admin-login__fact p {
+  color: rgb(var(--color-text-muted));
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.admin-login__panel {
+  max-width: 30rem;
+  justify-self: end;
+}
+
+.admin-login__panel .card-body {
+  padding: 1.6rem;
+}
+
+.admin-modal {
+  border: 1px solid rgb(var(--color-border-soft) / 0.08);
+  border-radius: var(--radius-lg);
+  background: rgb(var(--color-bg-panel) / 0.98);
+  box-shadow: var(--shadow-card), var(--shadow-inset);
+}
+
+.admin-modal .modal-header,
+.admin-modal .modal-footer {
+  padding-inline: 1.25rem;
+}
+
+.admin-modal .modal-body {
+  padding: 1.25rem;
+}
+
+.admin-modal .btn-close:focus {
+  box-shadow: var(--focus-ring);
+}
+
+.alert {
+  border-radius: var(--radius-sm);
+  border: 1px solid rgb(var(--color-campus-red) / 0.14);
+}
+
+img.rounded.border {
+  border-color: rgb(var(--color-border-soft) / 0.08) !important;
+  border-radius: var(--radius-sm) !important;
+}
