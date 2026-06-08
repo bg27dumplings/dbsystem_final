@@ -18,6 +18,26 @@ function nextCaptchaUrl() {
   return `/api/auth/captcha?ts=${Date.now()}`;
 }
 
+let initialCaptchaPromise: Promise<string> | null = null;
+
+function getInitialCaptcha() {
+  if (typeof window === "undefined") {
+    return Promise.resolve("");
+  }
+  if (!initialCaptchaPromise) {
+    initialCaptchaPromise = fetch(`/api/auth/captcha?ts=${Date.now()}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch captcha");
+        return res.text();
+      })
+      .catch((err) => {
+        initialCaptchaPromise = null;
+        throw err;
+      });
+  }
+  return initialCaptchaPromise;
+}
+
 function normalizeReturnTo(returnTo?: string | null) {
   if (!returnTo || !returnTo.startsWith("/") || returnTo.startsWith("//")) {
     return "/";
@@ -39,19 +59,54 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const [captcha, setCaptcha] = useState("");
-  const [captchaUrl, setCaptchaUrl] = useState("/api/auth/captcha");
+  const [captchaSvg, setCaptchaSvg] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [effectiveReturnTo, setEffectiveReturnTo] = useState(() => normalizeReturnTo(returnTo));
 
   useEffect(() => {
-    setCaptchaUrl(nextCaptchaUrl());
+    let active = true;
+    getInitialCaptcha()
+      .then((svg) => {
+        if (active) setCaptchaSvg(svg);
+      })
+      .catch(() => {
+        if (active) setCaptchaSvg("");
+      });
+
     if (!returnTo && typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       setEffectiveReturnTo(normalizeReturnTo(params.get("returnTo")));
     }
+
+    return () => {
+      active = false;
+      // Clear the cache after a short delay so that Strict Mode can reuse it,
+      // but client-side transitions to other pages will get a fresh captcha on return.
+      setTimeout(() => {
+        initialCaptchaPromise = null;
+      }, 500);
+    };
   }, []);
+
+  async function refreshCaptcha() {
+    setCaptcha("");
+    setCaptchaSvg("");
+    const promise = fetch(`/api/auth/captcha?ts=${Date.now()}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch captcha");
+        return res.text();
+      });
+    initialCaptchaPromise = promise;
+    try {
+      const svg = await promise;
+      setCaptchaSvg(svg);
+    } catch {
+      setCaptchaSvg("");
+      initialCaptchaPromise = null;
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,7 +134,7 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
         setFormError(result.formError ?? "登入失敗，請稍後再試。");
         setFieldErrors(result.fieldErrors ?? {});
         setCaptcha("");
-        setCaptchaUrl(nextCaptchaUrl());
+        await refreshCaptcha();
         return;
       }
 
@@ -88,7 +143,7 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
     } catch {
       setFormError("系統忙碌中，請稍後再試。");
       setCaptcha("");
-      setCaptchaUrl(nextCaptchaUrl());
+      await refreshCaptcha();
     } finally {
       setIsSubmitting(false);
     }
@@ -159,18 +214,19 @@ export function StudentLoginForm({ returnTo }: { returnTo?: string }) {
           <button
             type="button"
             className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-campus-moss px-3 py-2 text-campus-moss hover:bg-white"
-            onClick={() => {
-              setCaptcha("");
-              setCaptchaUrl(nextCaptchaUrl());
-            }}
+            onClick={refreshCaptcha}
             aria-label="重新產生驗證碼"
             title="重新產生驗證碼"
           >
             <RefreshCw aria-hidden="true" size={16} strokeWidth={2.5} />
           </button>
         </div>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-campus-ink/10 bg-white">
-          <img src={captchaUrl} alt="登入驗證碼圖片" className="h-20 w-full object-cover" />
+        <div className="mt-4 overflow-hidden rounded-2xl border border-campus-ink/10 bg-white min-h-20 flex items-center justify-center">
+          {captchaSvg ? (
+            <div dangerouslySetInnerHTML={{ __html: captchaSvg }} className="h-20 w-full flex items-center justify-center" />
+          ) : (
+            <div className="h-20 flex items-center justify-center text-sm text-slate-400 font-bold">驗證碼載入中...</div>
+          )}
         </div>
         <input
           id="captcha"

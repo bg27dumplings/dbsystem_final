@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { renderCaptchaSvg, setCaptchaCookie } from "@/lib/auth/captcha";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const code = await setCaptchaCookie();
   const svg = renderCaptchaSvg(code);
