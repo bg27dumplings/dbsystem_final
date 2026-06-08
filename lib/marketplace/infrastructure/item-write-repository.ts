@@ -24,6 +24,25 @@ type CreateMarketplaceItemImageRecordInput = {
   isPrimary: boolean;
 };
 
+type UpdateMarketplaceItemRecordInput = {
+  itemId: number;
+  studentId: number;
+  categoryId: number;
+  title: string;
+  description: string;
+  exchangeNote: string;
+  conditionLabel: string;
+  location: string;
+  originalPrice: number;
+  salePrice: number | null;
+};
+
+type UpdateMarketplaceItemStatusInput = {
+  itemId: number;
+  studentId: number;
+  nextStatus: "active" | "reserved" | "removed" | "deleted";
+};
+
 export async function insertMarketplaceItem(
   connection: mysql.PoolConnection,
   input: CreateMarketplaceItemRecordInput
@@ -61,7 +80,7 @@ export async function insertMarketplaceItemImage(
   connection: mysql.PoolConnection,
   input: CreateMarketplaceItemImageRecordInput
 ) {
-  await connection.execute(
+  const [result] = await connection.execute<mysql.ResultSetHeader>(
     `INSERT INTO item_images (
       item_id,
       storage_path,
@@ -82,5 +101,85 @@ export async function insertMarketplaceItemImage(
       input.sortOrder,
       input.isPrimary ? 1 : 0
     ]
+  );
+
+  return result.insertId;
+}
+
+export async function updateMarketplaceItem(
+  connection: mysql.PoolConnection,
+  input: UpdateMarketplaceItemRecordInput
+) {
+  await connection.execute(
+    `UPDATE items
+     SET category_id = ?,
+         title = ?,
+         description = ?,
+         exchange_note = ?,
+         condition_label = ?,
+         location = ?,
+         original_price = ?,
+         sale_price = ?
+     WHERE id = ? AND student_id = ?`,
+    [
+      input.categoryId,
+      input.title,
+      input.description,
+      input.exchangeNote,
+      input.conditionLabel,
+      input.location,
+      input.originalPrice,
+      input.salePrice,
+      input.itemId,
+      input.studentId
+    ]
+  );
+}
+
+export async function deleteMarketplaceItemImagesByIds(
+  connection: mysql.PoolConnection,
+  input: {
+    itemId: number;
+    imageIds: number[];
+  }
+) {
+  if (input.imageIds.length === 0) {
+    return;
+  }
+
+  const placeholders = input.imageIds.map(() => "?").join(", ");
+  await connection.query(
+    `DELETE FROM item_images
+     WHERE item_id = ? AND id IN (${placeholders})`,
+    [input.itemId, ...input.imageIds]
+  );
+}
+
+export async function updateMarketplaceItemImageOrdering(
+  connection: mysql.PoolConnection,
+  input: {
+    imageId: number;
+    itemId: number;
+    sortOrder: number;
+    isPrimary: boolean;
+  }
+) {
+  await connection.execute(
+    `UPDATE item_images
+     SET sort_order = ?, is_primary = ?
+     WHERE id = ? AND item_id = ?`,
+    [input.sortOrder, input.isPrimary ? 1 : 0, input.imageId, input.itemId]
+  );
+}
+
+export async function updateMarketplaceItemStatus(
+  connection: mysql.PoolConnection,
+  input: UpdateMarketplaceItemStatusInput
+) {
+  await connection.execute(
+    `UPDATE items
+     SET status = ?
+     WHERE id = ? AND student_id = ?`,
+    [input.nextStatus, input.itemId, input.studentId]
   );
 }

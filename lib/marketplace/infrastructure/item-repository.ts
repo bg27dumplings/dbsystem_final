@@ -2,8 +2,8 @@ import "server-only";
 import { RowDataPacket } from "mysql2";
 import { getDbPool } from "@/lib/db";
 import { resolveStoredExchange } from "@/lib/marketplace/domain/exchange";
-import type { MarketplaceItem } from "@/lib/marketplace/domain/models";
-import { mapMarketplaceItem } from "@/lib/marketplace/domain/mappers";
+import type { EditableMarketplaceItem, MarketplaceItem } from "@/lib/marketplace/domain/models";
+import { mapEditableMarketplaceItem, mapMarketplaceItem } from "@/lib/marketplace/domain/mappers";
 
 type ItemRow = RowDataPacket & {
   id: number;
@@ -25,6 +25,30 @@ type ItemImageRow = RowDataPacket & {
   public_url: string;
 };
 
+type EditableItemRow = RowDataPacket & {
+  id: number;
+  title: string;
+  description: string;
+  exchange_note: string;
+  condition_label: string;
+  location: string;
+  sale_price: number | null;
+  status: MarketplaceItem["status"];
+  category_id: number;
+};
+
+type EditableItemImageRow = RowDataPacket & {
+  id: number;
+  item_id: number;
+  storage_path: string;
+  public_url: string;
+  alt_text: string;
+  mime_type: string;
+  file_size: number;
+  sort_order: number;
+  is_primary: number;
+};
+
 type ItemActionContextRow = RowDataPacket & {
   id: number;
   title: string;
@@ -44,6 +68,18 @@ export type MarketplaceItemActionContext = {
   exchangeLabel: string;
   exchangeValue?: string;
   location: string;
+};
+
+export type MarketplaceOwnedItemImageRecord = {
+  id: number;
+  itemId: number;
+  storagePath: string;
+  publicUrl: string;
+  altText: string;
+  mimeType: string;
+  fileSize: number;
+  sortOrder: number;
+  isPrimary: boolean;
 };
 
 const SELECT_ITEM_FIELDS = `SELECT i.id, i.title, i.description, i.exchange_note, i.condition_label, i.location,
@@ -133,6 +169,32 @@ export async function findOwnedMarketplaceItemById(studentId: number, itemId: st
   return item ?? null;
 }
 
+export async function findEditableMarketplaceItemById(studentId: number, itemId: string): Promise<EditableMarketplaceItem | null> {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<EditableItemRow[]>(
+    `SELECT id, title, description, exchange_note, condition_label, location, sale_price, status, category_id
+     FROM items
+     WHERE id = ? AND student_id = ?
+     LIMIT 1`,
+    [itemId, studentId]
+  );
+
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  const [imageRows] = await pool.execute<EditableItemImageRow[]>(
+    `SELECT id, item_id, storage_path, public_url, alt_text, mime_type, file_size, sort_order, is_primary
+     FROM item_images
+     WHERE item_id = ?
+     ORDER BY is_primary DESC, sort_order ASC, id ASC`,
+    [itemId]
+  );
+
+  return mapEditableMarketplaceItem(row, imageRows);
+}
+
 export async function findMarketplaceItemActionContext(itemId: string): Promise<MarketplaceItemActionContext | null> {
   const pool = getDbPool();
   const [rows] = await pool.execute<ItemActionContextRow[]>(
@@ -161,4 +223,58 @@ export async function findMarketplaceItemActionContext(itemId: string): Promise<
     exchangeValue: exchange.exchangeValue,
     location: row.location
   };
+}
+
+export async function findOwnedMarketplaceItemActionContext(studentId: number, itemId: string): Promise<MarketplaceItemActionContext | null> {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<ItemActionContextRow[]>(
+    `SELECT i.id, i.title, i.student_id, i.status, i.sale_price, i.exchange_note, i.location
+     FROM items i
+     JOIN students s ON s.id = i.student_id
+     WHERE i.id = ? AND i.student_id = ? AND s.status = 'active'
+     LIMIT 1`,
+    [itemId, studentId]
+  );
+
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  const exchange = resolveStoredExchange(null, null, row.sale_price === null ? null : Number(row.sale_price), row.exchange_note);
+
+  return {
+    id: String(row.id),
+    title: row.title,
+    sellerId: row.student_id,
+    status: row.status,
+    exchangeMode: exchange.exchangeMode,
+    exchangeLabel: exchange.exchangeLabel,
+    exchangeValue: exchange.exchangeValue,
+    location: row.location
+  };
+}
+
+export async function findOwnedMarketplaceItemImages(studentId: number, itemId: string): Promise<MarketplaceOwnedItemImageRecord[]> {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<EditableItemImageRow[]>(
+    `SELECT img.id, img.item_id, img.storage_path, img.public_url, img.alt_text, img.mime_type, img.file_size, img.sort_order, img.is_primary
+     FROM item_images img
+     JOIN items i ON i.id = img.item_id
+     WHERE img.item_id = ? AND i.student_id = ?
+     ORDER BY img.is_primary DESC, img.sort_order ASC, img.id ASC`,
+    [itemId, studentId]
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    itemId: row.item_id,
+    storagePath: row.storage_path,
+    publicUrl: row.public_url,
+    altText: row.alt_text,
+    mimeType: row.mime_type,
+    fileSize: row.file_size,
+    sortOrder: row.sort_order,
+    isPrimary: row.is_primary === 1
+  }));
 }

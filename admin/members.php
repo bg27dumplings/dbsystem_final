@@ -71,7 +71,7 @@ $searchActions = '
           <td data-label="學號"><?= e($student['student_no']) ?></td>
           <td data-label="姓名"><?= e($student['name']) ?></td>
           <td data-label="註冊時間"><?= e($student['created_at']) ?></td>
-          <td data-label="狀態"><?= admin_status_badge($student['status']) ?></td>
+          <td data-label="狀態"><?= admin_status_badge($student['status'], 'member') ?></td>
           <td data-label="操作">
             <div class="d-flex flex-wrap align-items-center gap-2">
               <a class="btn admin-btn admin-btn--secondary btn-sm" href="/admin/member_detail.php?id=<?= e((string) $student['id']) ?>">查看</a>

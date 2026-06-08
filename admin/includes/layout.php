@@ -66,10 +66,10 @@ function admin_page_header(string $eyebrow, string $title, string $description =
     echo '</section>';
 }
 
-function admin_status_badge(string $status): string
+function admin_status_badge(string $status, string $context = 'generic'): string
 {
-    $labels = [
-        'active' => '上架中',
+    $genericLabels = [
+        'active' => '啟用',
         'reserved' => '預約中',
         'removed' => '已下架',
         'violation_removed' => '違規下架',
@@ -81,6 +81,15 @@ function admin_status_badge(string $status): string
         'cancelled' => '已取消',
         'rejected' => '已拒絕',
         'frozen' => '已凍結',
+    ];
+
+    $contextLabels = [
+        'item' => [
+            'active' => '上架中',
+        ],
+        'member' => [
+            'active' => '啟用',
+        ],
     ];
 
     $classes = [
@@ -98,7 +107,7 @@ function admin_status_badge(string $status): string
         'frozen' => 'admin-badge admin-badge--warning',
     ];
 
-    $label = $labels[$status] ?? $status;
+    $label = $contextLabels[$context][$status] ?? $genericLabels[$status] ?? $status;
     $className = $classes[$status] ?? 'admin-badge admin-badge--neutral';
 
     return '<span class="' . e($className) . '"><span aria-hidden="true" class="admin-badge__dot"></span>' . e($label) . '</span>';

@@ -1,14 +1,29 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { MyItemActions } from "@/components/items/my-item-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findItemsByStudentId } from "@/lib/marketplace/queries";
 
-export default async function MyItemsPage({ searchParams }: { searchParams?: Promise<{ created?: string }> }) {
+export default async function MyItemsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{
+    created?: string;
+    updated?: string;
+    deactivated?: string;
+    reactivated?: string;
+    deleted?: string;
+  }>;
+}) {
   const session = await requireStudentSession("/me/items");
   const items = await findItemsByStudentId(session.studentId);
   const params = await searchParams;
   const created = params?.created === "1";
+  const updated = params?.updated === "1";
+  const deactivated = params?.deactivated === "1";
+  const reactivated = params?.reactivated === "1";
+  const deleted = params?.deleted === "1";
 
   return (
     <section aria-labelledby="my-items-heading" className="space-y-5">
@@ -24,6 +39,26 @@ export default async function MyItemsPage({ searchParams }: { searchParams?: Pro
           新物品已成功上架。
         </div>
       ) : null}
+      {updated ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status">
+          物品內容已成功更新。
+        </div>
+      ) : null}
+      {deactivated ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800" role="status">
+          物品已下架。
+        </div>
+      ) : null}
+      {reactivated ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status">
+          物品已重新上架。
+        </div>
+      ) : null}
+      {deleted ? (
+        <div className="rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-800" role="status">
+          物品已刪除。
+        </div>
+      ) : null}
       {items.length > 0 ? (
         <div className="grid gap-3">
           {items.map((item) => (
@@ -36,9 +71,7 @@ export default async function MyItemsPage({ searchParams }: { searchParams?: Pro
                 <h2 className="mt-2 text-xl font-black text-campus-ink">{item.title}</h2>
                 <p className="text-sm text-slate-700">{item.exchangeLabel}</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Link href={`/me/items/${item.id}/edit`} className="rounded-md border border-campus-moss px-3 py-2 font-bold text-campus-moss">編輯</Link>
-              </div>
+              <MyItemActions itemId={item.id} itemStatus={item.status} />
             </article>
           ))}
         </div>

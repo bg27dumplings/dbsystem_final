@@ -62,7 +62,7 @@ $searchActions = '
           <td data-label="分類"><?= e($item['category_name']) ?></td>
           <td data-label="賣家"><?= e($item['seller_name']) ?></td>
           <td data-label="地點"><?= e($item['location']) ?></td>
-          <td data-label="狀態"><?= admin_status_badge($item['status']) ?></td>
+          <td data-label="狀態"><?= admin_status_badge($item['status'], 'item') ?></td>
           <td data-label="操作">
             <?php if ($item['status'] !== 'violation_removed'): ?>
               <form method="post" class="d-flex flex-column flex-sm-row gap-2">

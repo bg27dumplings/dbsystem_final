@@ -1,6 +1,8 @@
 export {
+  findEditableOwnedItemById,
   findActiveCategories,
   findAppointmentByIdForStudent,
+  findAppointmentDetailByIdForStudent,
   findAppointmentsByStudentId,
   findChatRoomByIdForStudent,
   findChatRoomsByStudentId,

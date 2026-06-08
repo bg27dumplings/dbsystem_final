@@ -22,6 +22,7 @@ export type MarketplaceItem = {
 
 export type AppointmentSummary = {
   id: string;
+  itemId: string;
   itemTitle: string;
   buyer: string;
   seller: string;
@@ -32,6 +33,34 @@ export type AppointmentSummary = {
   exchangeLabel: string;
   exchangeValue?: string;
   note?: string;
+};
+
+export type AppointmentReviewRecord = {
+  id: string;
+  reviewerId: string;
+  reviewerName: string;
+  revieweeId: string;
+  revieweeName: string;
+  rating: number;
+  comment: string;
+  status: string;
+  createdAt: string;
+};
+
+export type AppointmentDetail = AppointmentSummary & {
+  itemStatus: ItemStatus;
+  buyerId: string;
+  sellerId: string;
+  isBuyer: boolean;
+  isSeller: boolean;
+  reviews: AppointmentReviewRecord[];
+  canAccept: boolean;
+  canReject: boolean;
+  canCancel: boolean;
+  canComplete: boolean;
+  canFail: boolean;
+  canReview: boolean;
+  hasReviewed: boolean;
 };
 
 export type ChatRoomSummary = {
@@ -59,4 +88,24 @@ export type MarketplaceCategory = {
   id: string;
   name: string;
   slug: string;
+};
+
+export type EditableMarketplaceImage = {
+  id: string;
+  publicUrl: string;
+  altText: string;
+};
+
+export type EditableMarketplaceItem = {
+  id: string;
+  title: string;
+  categoryId: string;
+  conditionLabel: string;
+  location: string;
+  status: ItemStatus;
+  exchangeMode: MarketplaceExchangeMode;
+  exchangeLabel: string;
+  exchangeValue?: string;
+  description: string;
+  images: EditableMarketplaceImage[];
 };

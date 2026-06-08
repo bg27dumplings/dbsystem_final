@@ -1,28 +1,45 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { describedBy } from "@/lib/a11y";
 import {
   MARKETPLACE_CONDITION_OPTIONS,
   MARKETPLACE_EXCHANGE_MODE_LABELS
 } from "@/lib/marketplace/domain/constants";
+import type { EditableMarketplaceItem, MarketplaceCategory } from "@/lib/marketplace/domain/models";
 import type { CreateMarketplaceItemFieldErrors } from "@/lib/marketplace/domain/create-item";
-import type { MarketplaceCategory } from "@/lib/marketplace/types";
 
-type CreateItemResponse = {
+type ItemFormResponse = {
   ok: boolean;
   redirectTo?: string;
   formError?: string;
-  fieldErrors?: CreateMarketplaceItemFieldErrors;
+  fieldErrors?: ItemFormFieldErrors;
 };
 
-type ImagePreview = {
+type SupportedExchangeMode = "price" | "treat_drink" | "treat_food" | "free";
+type ItemFormFieldErrors = CreateMarketplaceItemFieldErrors & {
+  keptImageIds?: string;
+  imageOrder?: string;
+};
+
+type ExistingImageEntry = {
+  kind: "existing";
+  token: `existing:${string}`;
+  id: string;
+  url: string;
+  altText: string;
+};
+
+type NewImageEntry = {
+  kind: "new";
+  token: `new:${string}`;
+  localId: string;
   file: File;
   url: string;
 };
 
-type ExchangeMode = "price" | "treat_drink" | "treat_food" | "free";
+type ImageEntry = ExistingImageEntry | NewImageEntry;
 
 function readPreviewUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -33,58 +50,134 @@ function readPreviewUrl(file: File) {
   });
 }
 
-export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) {
+function normalizeSupportedExchangeMode(item?: EditableMarketplaceItem): SupportedExchangeMode {
+  if (!item) {
+    return "price";
+  }
+
+  if (item.exchangeMode === "price" || item.exchangeMode === "treat_drink" || item.exchangeMode === "treat_food" || item.exchangeMode === "free") {
+    return item.exchangeMode;
+  }
+
+  return item.exchangeValue ? "treat_food" : "free";
+}
+
+function buildInitialExchangeValue(item?: EditableMarketplaceItem) {
+  if (!item) {
+    return "";
+  }
+
+  return item.exchangeValue ?? "";
+}
+
+function buildInitialImageEntries(item?: EditableMarketplaceItem): ImageEntry[] {
+  if (!item) {
+    return [];
+  }
+
+  return item.images.map((image) => ({
+    kind: "existing",
+    token: `existing:${image.id}`,
+    id: image.id,
+    url: image.publicUrl,
+    altText: image.altText
+  }));
+}
+
+function moveArrayItem<T>(items: T[], fromIndex: number, direction: -1 | 1) {
+  const targetIndex = fromIndex + direction;
+  if (targetIndex < 0 || targetIndex >= items.length) {
+    return items;
+  }
+
+  const nextItems = [...items];
+  const [moved] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(targetIndex, 0, moved);
+  return nextItems;
+}
+
+export function ItemForm({
+  categories,
+  mode,
+  item
+}: {
+  categories: MarketplaceCategory[];
+  mode: "create" | "edit";
+  item?: EditableMarketplaceItem;
+}) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
-  const [conditionLabel, setConditionLabel] = useState<string>(MARKETPLACE_CONDITION_OPTIONS[0]);
-  const [location, setLocation] = useState("");
-  const [exchangeMode, setExchangeMode] = useState<ExchangeMode>("price");
-  const [exchangeValue, setExchangeValue] = useState("");
-  const [description, setDescription] = useState("");
-  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<CreateMarketplaceItemFieldErrors>({});
+  const [title, setTitle] = useState(item?.title ?? "");
+  const [categoryId, setCategoryId] = useState(item?.categoryId ?? categories[0]?.id ?? "");
+  const [conditionLabel, setConditionLabel] = useState<string>(item?.conditionLabel ?? MARKETPLACE_CONDITION_OPTIONS[0]);
+  const [location, setLocation] = useState(item?.location ?? "");
+  const [exchangeMode, setExchangeMode] = useState<SupportedExchangeMode>(normalizeSupportedExchangeMode(item));
+  const [exchangeValue, setExchangeValue] = useState(buildInitialExchangeValue(item));
+  const [description, setDescription] = useState(item?.description ?? "");
+  const [imageEntries, setImageEntries] = useState<ImageEntry[]>(buildInitialImageEntries(item));
+  const [fieldErrors, setFieldErrors] = useState<ItemFormFieldErrors>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const latestPreviewJob = useRef(0);
+  const isEditMode = mode === "edit" && item;
+  const remainingImageSlots = Math.max(0, 5 - imageEntries.length);
 
-  async function replaceImages(nextFiles: File[]) {
+  const newImageEntries = useMemo(
+    () => imageEntries.filter((entry): entry is NewImageEntry => entry.kind === "new"),
+    [imageEntries]
+  );
+
+  async function appendImages(nextFiles: File[]) {
+    const availableSlots = Math.max(0, 5 - imageEntries.length);
+    const filesToAppend = nextFiles.slice(0, availableSlots);
+    if (filesToAppend.length === 0) {
+      return;
+    }
+
     const jobId = latestPreviewJob.current + 1;
     latestPreviewJob.current = jobId;
 
     try {
-      const nextPreviews = await Promise.all(
-        nextFiles.map(async (file) => ({
-          file,
-          url: await readPreviewUrl(file)
-        }))
+      const nextEntries = await Promise.all(
+        filesToAppend.map(async (file) => {
+          const localId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+          return {
+            kind: "new" as const,
+            token: `new:${localId}` as const,
+            localId,
+            file,
+            url: await readPreviewUrl(file)
+          };
+        })
       );
 
       if (latestPreviewJob.current !== jobId) {
         return;
       }
 
-      setImagePreviews(nextPreviews);
-      setFieldErrors((current) => ({ ...current, images: undefined }));
+      setImageEntries((current) => [...current, ...nextEntries]);
+      setFieldErrors((current) => ({ ...current, images: undefined, keptImageIds: undefined, imageOrder: undefined }));
     } catch {
       if (latestPreviewJob.current !== jobId) {
         return;
       }
 
-      setImagePreviews([]);
       setFieldErrors((current) => ({ ...current, images: "圖片預覽失敗，請改選其他檔案。" }));
     }
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
-    const mergedFiles = [...imagePreviews.map((preview) => preview.file), ...selectedFiles].slice(0, 5);
-    void replaceImages(mergedFiles);
+    void appendImages(selectedFiles);
     event.target.value = "";
   }
 
-  function removeImage(index: number) {
-    setImagePreviews((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  function removeImage(token: string) {
+    setImageEntries((current) => current.filter((entry) => entry.token !== token));
+  }
+
+  function moveImage(index: number, direction: -1 | 1) {
+    setImageEntries((current) => moveArrayItem(current, index, direction));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -102,24 +195,38 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
       formData.set("exchangeMode", exchangeMode);
       formData.set("exchangeValue", exchangeValue);
       formData.set("description", description);
-      imagePreviews.forEach((preview) => formData.append("images", preview.file));
 
-      const response = await fetch("/api/items", {
-        method: "POST",
+      if (isEditMode) {
+        imageEntries.forEach((entry) => {
+          formData.append("imageOrder", entry.token);
+          if (entry.kind === "existing") {
+            formData.append("keptImageIds", entry.id);
+          } else {
+            formData.append("newImageKeys", entry.localId);
+          }
+        });
+
+        newImageEntries.forEach((entry) => formData.append("newImages", entry.file));
+      } else {
+        newImageEntries.forEach((entry) => formData.append("images", entry.file));
+      }
+
+      const response = await fetch(isEditMode ? `/api/items/${item.id}` : "/api/items", {
+        method: isEditMode ? "PATCH" : "POST",
         body: formData
       });
 
-      const result = (await response.json()) as CreateItemResponse;
+      const result = (await response.json()) as ItemFormResponse;
       if (!response.ok || !result.ok) {
-        setFormError(result.formError ?? "物品建立失敗，請稍後再試。");
+        setFormError(result.formError ?? (isEditMode ? "物品更新失敗，請稍後再試。" : "物品建立失敗，請稍後再試。"));
         setFieldErrors(result.fieldErrors ?? {});
         return;
       }
 
-      router.push(result.redirectTo ?? "/me/items");
+      window.location.assign(result.redirectTo ?? "/me/items");
       router.refresh();
     } catch {
-      setFormError("系統忙碌中，請稍後再試。");
+      setFormError(isEditMode ? "系統忙碌中，更新失敗，請稍後再試。" : "系統忙碌中，請稍後再試。");
     } finally {
       setIsSubmitting(false);
     }
@@ -142,38 +249,65 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
         </label>
         <input
           id="photos"
-          name="images"
+          name="photos"
           type="file"
           accept="image/*"
           multiple
           className="sr-only"
           onChange={handleFileChange}
-          aria-invalid={fieldErrors.images ? "true" : "false"}
+          disabled={remainingImageSlots === 0}
+          aria-invalid={fieldErrors.images || fieldErrors.imageOrder || fieldErrors.keptImageIds ? "true" : "false"}
           aria-describedby={`photos-help ${fieldErrors.images ? "photos-error" : ""}`.trim()}
         />
         <p id="photos-help" className="mt-2 text-sm text-slate-700">
-          請上傳 1 到 5 張圖片。系統會依照你挑選的順序儲存，第一張就是封面圖。
+          請上傳 1 到 5 張圖片。你可以調整順序，第一張就是封面圖。
         </p>
         {fieldErrors.images ? (
           <p id="photos-error" className="mt-2 text-sm font-semibold text-campus-red">
             {fieldErrors.images}
           </p>
         ) : null}
-        {imagePreviews.length > 0 ? (
+        {fieldErrors.imageOrder ? <p className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.imageOrder}</p> : null}
+        {fieldErrors.keptImageIds ? <p className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.keptImageIds}</p> : null}
+        {imageEntries.length > 0 ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {imagePreviews.map((preview, index) => (
-              <figure key={`${preview.file.name}-${index}`} className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10">
-                <img src={preview.url} alt={`${preview.file.name} 預覽`} className="aspect-[4/3] w-full object-cover" />
+            {imageEntries.map((entry, index) => (
+              <figure key={entry.token} className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10">
+                <img
+                  src={entry.url}
+                  alt={entry.kind === "existing" ? entry.altText : `${entry.file.name} 預覽`}
+                  className="aspect-[4/3] w-full object-cover"
+                />
                 <figcaption className="space-y-2 p-3">
                   <p className="text-sm font-bold text-campus-ink">{index === 0 ? "主圖" : `圖片 ${index + 1}`}</p>
-                  <p className="text-xs text-slate-600">{preview.file.name}</p>
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="rounded-md border border-campus-red/20 px-3 py-2 text-sm font-bold text-campus-red"
-                  >
-                    移除
-                  </button>
+                  <p className="text-xs text-slate-600">
+                    {entry.kind === "existing" ? "既有圖片" : entry.file.name}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => moveImage(index, -1)}
+                      disabled={index === 0}
+                      className="rounded-md border border-slate-300 px-3 py-2 text-sm font-bold text-campus-ink disabled:cursor-not-allowed disabled:text-slate-400"
+                    >
+                      往前
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveImage(index, 1)}
+                      disabled={index === imageEntries.length - 1}
+                      className="rounded-md border border-slate-300 px-3 py-2 text-sm font-bold text-campus-ink disabled:cursor-not-allowed disabled:text-slate-400"
+                    >
+                      往後
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(entry.token)}
+                      className="rounded-md border border-campus-red/20 px-3 py-2 text-sm font-bold text-campus-red"
+                    >
+                      移除
+                    </button>
+                  </div>
                 </figcaption>
               </figure>
             ))}
@@ -252,7 +386,7 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
             name="exchangeMode"
             value={exchangeMode}
             onChange={(event) => {
-              setExchangeMode(event.target.value as ExchangeMode);
+              setExchangeMode(event.target.value as SupportedExchangeMode);
               setExchangeValue("");
             }}
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
@@ -287,7 +421,7 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
                 placeholder="例如：50"
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
                 aria-invalid={fieldErrors.exchangeValue ? "true" : "false"}
-                aria-describedby={`exchange-value-help ${fieldErrors.exchangeValue ? "exchange-value-error" : ""}`.trim()}
+                aria-describedby={fieldErrors.exchangeValue ? describedBy("exchange-value", true) : undefined}
               />
             </>
           ) : null}
@@ -378,7 +512,7 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
         disabled={isSubmitting}
         className="rounded-md bg-campus-moss px-4 py-3 font-black text-white hover:bg-campus-ink disabled:cursor-not-allowed disabled:bg-slate-400"
       >
-        {isSubmitting ? "發布中..." : "發布上架"}
+        {isSubmitting ? (isEditMode ? "更新中..." : "發布中...") : (isEditMode ? "儲存變更" : "發布上架")}
       </button>
     </form>
   );

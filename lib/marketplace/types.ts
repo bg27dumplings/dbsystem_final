@@ -1,4 +1,6 @@
 export type {
+  AppointmentDetail,
+  AppointmentReviewRecord,
   AppointmentStatus,
   AppointmentSummary,
   ChatMessageRecord,

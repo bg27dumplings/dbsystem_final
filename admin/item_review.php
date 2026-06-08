@@ -57,7 +57,7 @@ admin_header('物品審查詳情');
         <dl class="admin-description-list">
           <div><dt>分類</dt><dd><?= e($item['category_name']) ?></dd></div>
           <div><dt>賣家</dt><dd><?= e($item['seller_name'] . ' / ' . $item['student_no']) ?></dd></div>
-          <div><dt>狀態</dt><dd><?= admin_status_badge($item['status']) ?></dd></div>
+          <div><dt>狀態</dt><dd><?= admin_status_badge($item['status'], 'item') ?></dd></div>
           <div><dt>交換條件</dt><dd><?= e($item['exchange_note']) ?></dd></div>
           <div><dt>地點</dt><dd><?= e($item['location']) ?></dd></div>
           <div><dt>描述</dt><dd><?= nl2br(e($item['description'])) ?></dd></div>

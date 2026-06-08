@@ -58,7 +58,7 @@ $actions .= '</div>';
         <dl class="admin-description-list">
           <div><dt>學號</dt><dd><?= e($student['student_no']) ?></dd></div>
           <div><dt>信箱</dt><dd><?= e($student['email']) ?></dd></div>
-          <div><dt>狀態</dt><dd><?= admin_status_badge($student['status']) ?></dd></div>
+          <div><dt>狀態</dt><dd><?= admin_status_badge($student['status'], 'member') ?></dd></div>
           <div><dt>註冊時間</dt><dd><?= e($student['created_at']) ?></dd></div>
           <div><dt>凍結原因</dt><dd><?= e($student['frozen_reason'] ?? '無') ?></dd></div>
         </dl>
@@ -76,7 +76,7 @@ $actions .= '</div>';
               <?php foreach ($items as $item): ?>
                 <tr>
                   <td data-label="物品"><a class="admin-muted-link" href="/admin/item_review.php?id=<?= e((string) $item['id']) ?>"><?= e($item['title']) ?></a></td>
-                  <td data-label="狀態"><?= admin_status_badge($item['status']) ?></td>
+                  <td data-label="狀態"><?= admin_status_badge($item['status'], 'item') ?></td>
                   <td data-label="建立時間"><?= e($item['created_at']) ?></td>
                 </tr>
               <?php endforeach; ?>

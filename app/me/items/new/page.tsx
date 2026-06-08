@@ -22,7 +22,7 @@ export default async function NewItemPage() {
     <section className="mx-auto max-w-3xl rounded-lg bg-white p-5 shadow-sm ring-1 ring-campus-ink/10" aria-labelledby="new-item-heading">
       <p className="text-sm font-black text-campus-moss">物品上架</p>
       <h1 id="new-item-heading" className="text-3xl font-black text-campus-ink">新增二手物品</h1>
-      <ItemForm categories={categories} />
+      <ItemForm categories={categories} mode="create" />
     </section>
   );
 }
