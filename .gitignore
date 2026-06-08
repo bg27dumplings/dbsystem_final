@@ -41,7 +41,7 @@ coverage/
 *.tsbuildinfo
 
 # Local planning / Codex scratch files
-codex.md
+Agent.md
 skill-list.md
 frontend-design/
 frontend-spec/
