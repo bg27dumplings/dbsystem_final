@@ -6,6 +6,9 @@ import { mapAppointmentSummary } from "@/lib/marketplace/domain/mappers";
 
 type AppointmentRow = RowDataPacket & {
   id: number;
+  item_id: number;
+  buyer_id: number;
+  seller_id: number;
   meetup_at: Date | string;
   location: string;
   amount: number;
@@ -18,7 +21,20 @@ type AppointmentRow = RowDataPacket & {
   seller_name: string;
 };
 
-const SELECT_APPOINTMENT_FIELDS = `SELECT a.id, a.meetup_at, a.location, a.amount, a.exchange_mode, a.exchange_value, a.note, a.status,
+export type AppointmentRecord = {
+  id: number;
+  itemId: number;
+  buyerId: number;
+  sellerId: number;
+  status: AppointmentSummary["status"];
+  meetupAt: Date | string;
+  location: string;
+  itemTitle: string;
+  buyerName: string;
+  sellerName: string;
+};
+
+const SELECT_APPOINTMENT_FIELDS = `SELECT a.id, a.item_id, a.buyer_id, a.seller_id, a.meetup_at, a.location, a.location_x, a.location_y, a.amount, a.exchange_mode, a.exchange_value, a.note, a.status,
         i.title AS item_title,
         buyer.name AS buyer_name,
         seller.name AS seller_name
@@ -26,6 +42,21 @@ const SELECT_APPOINTMENT_FIELDS = `SELECT a.id, a.meetup_at, a.location, a.amoun
  JOIN items i ON i.id = a.item_id
  JOIN students buyer ON buyer.id = a.buyer_id
  JOIN students seller ON seller.id = a.seller_id`;
+
+function mapAppointmentRecord(row: AppointmentRow): AppointmentRecord {
+  return {
+    id: row.id,
+    itemId: row.item_id,
+    buyerId: row.buyer_id,
+    sellerId: row.seller_id,
+    status: row.status,
+    meetupAt: row.meetup_at,
+    location: row.location,
+    itemTitle: row.item_title,
+    buyerName: row.buyer_name,
+    sellerName: row.seller_name
+  };
+}
 
 export async function findStudentAppointments(studentId: number) {
   const pool = getDbPool();
@@ -36,7 +67,7 @@ export async function findStudentAppointments(studentId: number) {
     [studentId, studentId]
   );
 
-  return rows.map(mapAppointmentSummary);
+  return rows.map((row) => mapAppointmentSummary(row, studentId));
 }
 
 export async function findStudentAppointmentById(studentId: number, appointmentId: string) {
@@ -49,5 +80,54 @@ export async function findStudentAppointmentById(studentId: number, appointmentI
   );
 
   const row = rows[0];
-  return row ? mapAppointmentSummary(row) : null;
+  return row ? mapAppointmentSummary(row, studentId) : null;
+}
+
+export async function findAppointmentRecordById(appointmentId: string) {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<AppointmentRow[]>(
+    `${SELECT_APPOINTMENT_FIELDS}
+     WHERE a.id = ?
+     LIMIT 1`,
+    [appointmentId]
+  );
+
+  const row = rows[0];
+  return row ? mapAppointmentRecord(row) : null;
+}
+
+export async function countActiveAppointmentsForItem(itemId: number) {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `SELECT COUNT(*) AS total
+     FROM appointments
+     WHERE item_id = ? AND status = 'accepted'`,
+    [itemId]
+  );
+
+  return Number(rows[0]?.total ?? 0);
+}
+
+export async function countPendingAppointmentsForStudent(studentId: number) {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `SELECT COUNT(*) AS total
+     FROM appointments
+     WHERE (buyer_id = ? OR seller_id = ?) AND status = 'pending'`,
+    [studentId, studentId]
+  );
+
+  return Number(rows[0]?.total ?? 0);
+}
+
+export async function hasPendingAppointmentForBuyerItem(itemId: number, buyerId: number) {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `SELECT COUNT(*) AS total
+     FROM appointments
+     WHERE item_id = ? AND buyer_id = ? AND status IN ('pending', 'accepted')`,
+    [itemId, buyerId]
+  );
+
+  return Number(rows[0]?.total ?? 0) > 0;
 }

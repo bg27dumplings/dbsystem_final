@@ -8,6 +8,9 @@ type ItemRowShape = {
   exchange_note: string;
   condition_label: string;
   location: string;
+  quantity?: number;
+  location_x?: number | null;
+  location_y?: number | null;
   original_price: number;
   sale_price: number | null;
   status: MarketplaceItem["status"];
@@ -16,10 +19,22 @@ type ItemRowShape = {
   image_url: string | null;
 };
 
+type MarketplaceItemExtras = {
+  categoryId?: string;
+  sellerId?: string;
+  sellerBio?: string;
+  sellerRating?: MarketplaceItem["sellerRating"];
+};
+
 type AppointmentRowShape = {
   id: number;
+  item_id: number;
+  buyer_id: number;
+  seller_id: number;
   meetup_at: Date | string;
   location: string;
+  location_x?: number | null;
+  location_y?: number | null;
   amount: number;
   exchange_mode: string | null;
   exchange_value: string | null;
@@ -63,16 +78,30 @@ export function formatDateTime(value: Date | string) {
   return formatter.format(date).replace(/\//g, "-");
 }
 
-export function mapMarketplaceItem(row: ItemRowShape, images: string[] = []): MarketplaceItem {
+export function toMapCoordinate(x: number | null | undefined, y: number | null | undefined) {
+  if (x === null || x === undefined || y === null || y === undefined) {
+    return undefined;
+  }
+
+  return { x: Number(x), y: Number(y) };
+}
+
+export function mapMarketplaceItem(row: ItemRowShape, images: string[] = [], extras: MarketplaceItemExtras = {}): MarketplaceItem {
   const exchange = inferExchangeFromStoredValues(row.sale_price, row.exchange_note);
 
   return {
     id: String(row.id),
     title: row.title,
     category: row.category_name,
+    categoryId: extras.categoryId,
     condition: row.condition_label,
     location: row.location,
+    quantity: Number(row.quantity ?? 1),
+    mapPoint: toMapCoordinate(row.location_x, row.location_y),
     seller: row.seller_name,
+    sellerId: extras.sellerId,
+    sellerBio: extras.sellerBio,
+    sellerRating: extras.sellerRating,
     status: row.status,
     originalPrice: Number(row.original_price),
     salePrice: row.sale_price === null ? undefined : Number(row.sale_price),
@@ -85,7 +114,7 @@ export function mapMarketplaceItem(row: ItemRowShape, images: string[] = []): Ma
   };
 }
 
-export function mapAppointmentSummary(row: AppointmentRowShape): AppointmentSummary {
+export function mapAppointmentSummary(row: AppointmentRowShape, viewerStudentId?: number): AppointmentSummary {
   const exchange = resolveStoredExchange(
     row.exchange_mode,
     row.exchange_value,
@@ -93,18 +122,26 @@ export function mapAppointmentSummary(row: AppointmentRowShape): AppointmentSumm
     row.note ?? ""
   );
 
+  const meetupDate = row.meetup_at instanceof Date ? row.meetup_at : new Date(row.meetup_at);
+
   return {
     id: String(row.id),
+    itemId: String(row.item_id),
     itemTitle: row.item_title,
     buyer: row.buyer_name,
+    buyerId: String(row.buyer_id),
     seller: row.seller_name,
+    sellerId: String(row.seller_id),
     time: formatDateTime(row.meetup_at),
+    meetupAt: Number.isNaN(meetupDate.getTime()) ? String(row.meetup_at) : meetupDate.toISOString(),
     location: row.location,
+    mapPoint: toMapCoordinate(row.location_x, row.location_y),
     status: row.status,
     exchangeMode: exchange.exchangeMode,
     exchangeLabel: exchange.exchangeLabel,
     exchangeValue: exchange.exchangeValue,
-    note: row.note ?? undefined
+    note: row.note ?? undefined,
+    viewerRole: viewerStudentId === row.seller_id ? "seller" : "buyer"
   };
 }
 

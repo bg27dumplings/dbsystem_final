@@ -2,7 +2,9 @@
 
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CampusMapPicker } from "@/components/location/campus-map-picker";
 import { describedBy } from "@/lib/a11y";
+import type { MapCoordinate } from "@/lib/marketplace/domain/models";
 import {
   MARKETPLACE_CONDITION_OPTIONS,
   MARKETPLACE_EXCHANGE_MODE_LABELS
@@ -18,11 +20,26 @@ type CreateItemResponse = {
 };
 
 type ImagePreview = {
-  file: File;
+  file?: File;
   url: string;
+  isExisting?: boolean;
 };
 
 type ExchangeMode = "price" | "treat_drink" | "treat_food" | "free";
+
+type ItemFormInitialValues = {
+  itemId: string;
+  title: string;
+  categoryId: string;
+  conditionLabel: string;
+  location: string;
+  quantity: string;
+  mapPoint?: MapCoordinate;
+  exchangeMode: ExchangeMode;
+  exchangeValue: string;
+  description: string;
+  images: string[];
+};
 
 function readPreviewUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -33,16 +50,29 @@ function readPreviewUrl(file: File) {
   });
 }
 
-export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) {
+export function ItemForm({
+  categories,
+  mode = "create",
+  initialValues
+}: {
+  categories: MarketplaceCategory[];
+  mode?: "create" | "edit";
+  initialValues?: ItemFormInitialValues;
+}) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
-  const [conditionLabel, setConditionLabel] = useState<string>(MARKETPLACE_CONDITION_OPTIONS[0]);
-  const [location, setLocation] = useState("");
-  const [exchangeMode, setExchangeMode] = useState<ExchangeMode>("price");
-  const [exchangeValue, setExchangeValue] = useState("");
-  const [description, setDescription] = useState("");
-  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
+  const isEdit = mode === "edit" && initialValues;
+  const [title, setTitle] = useState(initialValues?.title ?? "");
+  const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? categories[0]?.id ?? "");
+  const [conditionLabel, setConditionLabel] = useState<string>(initialValues?.conditionLabel ?? MARKETPLACE_CONDITION_OPTIONS[0]);
+  const [location, setLocation] = useState(initialValues?.location ?? "");
+  const [quantity, setQuantity] = useState(initialValues?.quantity ?? "1");
+  const [mapPoint, setMapPoint] = useState<MapCoordinate | undefined>(initialValues?.mapPoint);
+  const [exchangeMode, setExchangeMode] = useState<ExchangeMode>(initialValues?.exchangeMode ?? "price");
+  const [exchangeValue, setExchangeValue] = useState(initialValues?.exchangeValue ?? "");
+  const [description, setDescription] = useState(initialValues?.description ?? "");
+  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>(
+    initialValues?.images.map((url) => ({ url, isExisting: true })) ?? []
+  );
   const [fieldErrors, setFieldErrors] = useState<CreateMarketplaceItemFieldErrors>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,7 +108,8 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
-    const mergedFiles = [...imagePreviews.map((preview) => preview.file), ...selectedFiles].slice(0, 5);
+    const existingFiles = imagePreviews.filter((preview) => preview.file).map((preview) => preview.file!);
+    const mergedFiles = [...existingFiles, ...selectedFiles].slice(0, 5);
     void replaceImages(mergedFiles);
     event.target.value = "";
   }
@@ -99,19 +130,29 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
       formData.set("categoryId", categoryId);
       formData.set("conditionLabel", conditionLabel);
       formData.set("location", location);
+      formData.set("quantity", quantity);
+      if (mapPoint) {
+        formData.set("locationX", String(mapPoint.x));
+        formData.set("locationY", String(mapPoint.y));
+      }
       formData.set("exchangeMode", exchangeMode);
       formData.set("exchangeValue", exchangeValue);
       formData.set("description", description);
-      imagePreviews.forEach((preview) => formData.append("images", preview.file));
+      imagePreviews.forEach((preview) => {
+        if (preview.file) {
+          formData.append("images", preview.file);
+        }
+      });
 
-      const response = await fetch("/api/items", {
-        method: "POST",
+      const endpoint = isEdit ? `/api/items/${initialValues.itemId}` : "/api/items";
+      const response = await fetch(endpoint, {
+        method: isEdit ? "PUT" : "POST",
         body: formData
       });
 
       const result = (await response.json()) as CreateItemResponse;
       if (!response.ok || !result.ok) {
-        setFormError(result.formError ?? "物品建立失敗，請稍後再試。");
+        setFormError(result.formError ?? (isEdit ? "物品更新失敗，請稍後再試。" : "物品建立失敗，請稍後再試。"));
         setFieldErrors(result.fieldErrors ?? {});
         return;
       }
@@ -138,7 +179,7 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
           htmlFor="photos"
           className="mt-2 block cursor-pointer rounded-md border-2 border-dashed border-campus-moss bg-white p-6 text-center font-bold text-campus-moss"
         >
-          點擊選擇照片，第一張會作為主圖
+          {isEdit ? "若要更換照片請重新選擇，未選擇則保留原本圖片" : "點擊選擇照片，第一張會作為主圖"}
         </label>
         <input
           id="photos"
@@ -152,7 +193,9 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
           aria-describedby={`photos-help ${fieldErrors.images ? "photos-error" : ""}`.trim()}
         />
         <p id="photos-help" className="mt-2 text-sm text-slate-700">
-          請上傳 1 到 5 張圖片。系統會依照你挑選的順序儲存，第一張就是封面圖。
+          {isEdit
+            ? "編輯時若不重新上傳圖片，會保留原本照片。若要更換，請重新選擇 1 到 5 張圖片。"
+            : "請上傳 1 到 5 張圖片。系統會依照你挑選的順序儲存，第一張就是封面圖。"}
         </p>
         {fieldErrors.images ? (
           <p id="photos-error" className="mt-2 text-sm font-semibold text-campus-red">
@@ -162,11 +205,11 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
         {imagePreviews.length > 0 ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {imagePreviews.map((preview, index) => (
-              <figure key={`${preview.file.name}-${index}`} className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10">
-                <img src={preview.url} alt={`${preview.file.name} 預覽`} className="aspect-[4/3] w-full object-cover" />
+              <figure key={`${preview.url}-${index}`} className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10">
+                <img src={preview.url} alt={`${preview.file?.name ?? "物品"} 預覽`} className="aspect-[4/3] w-full object-cover" />
                 <figcaption className="space-y-2 p-3">
                   <p className="text-sm font-bold text-campus-ink">{index === 0 ? "主圖" : `圖片 ${index + 1}`}</p>
-                  <p className="text-xs text-slate-600">{preview.file.name}</p>
+                  <p className="text-xs text-slate-600">{preview.file?.name ?? (preview.isExisting ? "目前照片" : "")}</p>
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
@@ -336,6 +379,23 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
             </p>
           ) : null}
         </div>
+        <div>
+          <label htmlFor="quantity" className="font-bold">
+            數量
+          </label>
+          <input
+            id="quantity"
+            name="quantity"
+            type="number"
+            min="1"
+            max="99"
+            value={quantity}
+            onChange={(event) => setQuantity(event.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
+            aria-invalid={fieldErrors.quantity ? "true" : "false"}
+          />
+          {fieldErrors.quantity ? <p className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.quantity}</p> : null}
+        </div>
         <div className="sm:col-span-2">
           <label htmlFor="location" className="font-bold">
             面交地點
@@ -351,6 +411,9 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
             aria-describedby={fieldErrors.location ? describedBy("location", true) : undefined}
           />
           {fieldErrors.location ? <p id="location-error" className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.location}</p> : null}
+        </div>
+        <div className="sm:col-span-2">
+          <CampusMapPicker value={mapPoint} onChange={setMapPoint} />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="description" className="font-bold">
@@ -378,7 +441,7 @@ export function ItemForm({ categories }: { categories: MarketplaceCategory[] }) 
         disabled={isSubmitting}
         className="rounded-md bg-campus-moss px-4 py-3 font-black text-white hover:bg-campus-ink disabled:cursor-not-allowed disabled:bg-slate-400"
       >
-        {isSubmitting ? "發布中..." : "發布上架"}
+        {isSubmitting ? (isEdit ? "儲存中..." : "發布中...") : isEdit ? "儲存變更" : "發布上架"}
       </button>
     </form>
   );

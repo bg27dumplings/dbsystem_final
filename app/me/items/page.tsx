@@ -1,27 +1,39 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { MeSubnav } from "@/components/me/me-subnav";
 import { StatusBadge } from "@/components/status-badge";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findItemsByStudentId } from "@/lib/marketplace/queries";
 
-export default async function MyItemsPage({ searchParams }: { searchParams?: Promise<{ created?: string }> }) {
+export default async function MyItemsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ created?: string; updated?: string }>;
+}) {
   const session = await requireStudentSession("/me/items");
   const items = await findItemsByStudentId(session.studentId);
   const params = await searchParams;
   const created = params?.created === "1";
+  const updated = params?.updated === "1";
 
   return (
     <section aria-labelledby="my-items-heading" className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-black text-campus-moss">個人二手倉庫</p>
+          <p className="text-sm font-black text-campus-moss">我的</p>
           <h1 id="my-items-heading" className="text-3xl font-black text-campus-ink">我的物品</h1>
         </div>
         <Link href="/me/items/new" className="inline-flex min-h-12 items-center justify-center rounded-md bg-campus-gold px-4 py-3 font-black text-white">新增物品</Link>
       </div>
+      <MeSubnav active="items" />
       {created ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status">
           新物品已成功上架。
+        </div>
+      ) : null}
+      {updated ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status">
+          物品內容已更新。
         </div>
       ) : null}
       {items.length > 0 ? (
@@ -35,6 +47,7 @@ export default async function MyItemsPage({ searchParams }: { searchParams?: Pro
                 </div>
                 <h2 className="mt-2 text-xl font-black text-campus-ink">{item.title}</h2>
                 <p className="text-sm text-slate-700">{item.exchangeLabel}</p>
+                <p className="text-sm text-slate-700">數量：{item.quantity}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href={`/me/items/${item.id}/edit`} className="rounded-md border border-campus-moss px-3 py-2 font-bold text-campus-moss">編輯</Link>

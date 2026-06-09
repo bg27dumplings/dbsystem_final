@@ -48,7 +48,7 @@ export default async function ChatRoomPage({ params }: { params: Promise<{ roomI
       </ol>
       <ChatComposer roomId={room.roomId} />
       <div className="flex justify-end border-t border-campus-ink/10 px-4 pb-4">
-        <Link href="/appointments" className="inline-flex items-center justify-center rounded-md border border-campus-moss px-4 py-3 font-black text-campus-moss">
+        <Link href="/me/appointments" className="inline-flex items-center justify-center rounded-md border border-campus-moss px-4 py-3 font-black text-campus-moss">
           查看預約
         </Link>
       </div>

@@ -2,6 +2,7 @@ import type { AppointmentStatus, ItemStatus } from "@/lib/marketplace/types";
 
 const labels: Record<ItemStatus | AppointmentStatus, string> = {
   active: "上架中",
+  hidden: "已額滿隱藏",
   reserved: "預約中",
   removed: "已下架",
   violation_removed: "違規下架",
@@ -16,6 +17,7 @@ const labels: Record<ItemStatus | AppointmentStatus, string> = {
 
 const styles: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-950 ring-emerald-300",
+  hidden: "bg-slate-200 text-slate-900 ring-slate-300",
   reserved: "bg-amber-100 text-amber-950 ring-amber-300",
   removed: "bg-slate-200 text-slate-900 ring-slate-300",
   violation_removed: "bg-red-100 text-red-950 ring-red-300",

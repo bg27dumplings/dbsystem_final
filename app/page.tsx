@@ -2,15 +2,31 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { FilterPanel } from "@/components/filter-panel";
 import { ItemCard } from "@/components/item-card";
-import { findPublicItems } from "@/lib/marketplace/queries";
+import { findActiveCategories, findPublicItems } from "@/lib/marketplace/queries";
 
-export default async function HomePage() {
-  const items = await findPublicItems();
+export default async function HomePage({
+  searchParams
+}: {
+  searchParams?: Promise<{
+    keyword?: string;
+    categoryId?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  const filters = {
+    keyword: params?.keyword,
+    categoryId: params?.categoryId,
+    minPrice: params?.minPrice,
+    maxPrice: params?.maxPrice
+  };
+  const [categories, items] = await Promise.all([findActiveCategories(), findPublicItems(filters)]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
       <aside className="hidden lg:block">
-        <FilterPanel />
+        <FilterPanel categories={categories} action="/" values={filters} />
       </aside>
       <section aria-labelledby="home-heading" className="space-y-5">
         <div className="rounded-lg border border-campus-ink/10 bg-white p-5 shadow-sm md:p-7">
@@ -30,7 +46,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="lg:hidden">
-          <FilterPanel compact />
+          <FilterPanel categories={categories} action="/" values={filters} compact />
         </div>
         {items.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

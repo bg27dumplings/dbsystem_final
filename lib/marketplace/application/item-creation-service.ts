@@ -96,6 +96,11 @@ async function validateCreateMarketplaceItemInput(
     fieldErrors.location = "請輸入面交地點。";
   }
 
+  const quantity = Number(input.quantity.trim() || "1");
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+    fieldErrors.quantity = "請輸入 1 到 99 的數量。";
+  }
+
   const exchangeDetails = buildExchangeDetails(input.exchangeMode.trim(), input.exchangeValue);
   if (!exchangeDetails.ok) {
     fieldErrors[exchangeDetails.field] = exchangeDetails.message;
@@ -129,6 +134,9 @@ async function validateCreateMarketplaceItemInput(
       categoryId: Number(matchedCategory.id),
       conditionLabel,
       location,
+      quantity,
+      locationX: input.locationX.trim() ? Number(input.locationX) : null,
+      locationY: input.locationY.trim() ? Number(input.locationY) : null,
       exchangeMode: exchangeDetails.exchangeMode,
       exchangeLabel: exchangeDetails.exchangeLabel,
       exchangeValue: exchangeDetails.exchangeValue,

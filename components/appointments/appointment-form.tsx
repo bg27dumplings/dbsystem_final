@@ -2,8 +2,10 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CampusMapPicker } from "@/components/location/campus-map-picker";
 import { describedBy } from "@/lib/a11y";
 import { MARKETPLACE_EXCHANGE_MODE_LABELS } from "@/lib/marketplace/domain/constants";
+import type { MapCoordinate } from "@/lib/marketplace/domain/models";
 
 type CreateAppointmentFieldErrors = {
   itemId?: string;
@@ -26,17 +28,20 @@ type ExchangeMode = "price" | "treat_drink" | "treat_food" | "free";
 export function AppointmentForm({
   itemId,
   initialLocation,
+  initialMapPoint,
   initialExchangeMode,
   initialExchangeValue
 }: {
   itemId: string;
   initialLocation: string;
+  initialMapPoint?: MapCoordinate;
   initialExchangeMode: ExchangeMode;
   initialExchangeValue: string;
 }) {
   const router = useRouter();
   const [meetupAt, setMeetupAt] = useState("");
   const [location, setLocation] = useState(initialLocation);
+  const [mapPoint, setMapPoint] = useState<MapCoordinate | undefined>(initialMapPoint);
   const [exchangeMode, setExchangeMode] = useState<ExchangeMode>(initialExchangeMode);
   const [exchangeValue, setExchangeValue] = useState(initialExchangeValue);
   const [note, setNote] = useState("");
@@ -60,6 +65,8 @@ export function AppointmentForm({
           itemId,
           meetupAt,
           location,
+          locationX: mapPoint ? String(mapPoint.x) : "",
+          locationY: mapPoint ? String(mapPoint.y) : "",
           exchangeMode,
           exchangeValue,
           note
@@ -73,7 +80,7 @@ export function AppointmentForm({
         return;
       }
 
-      window.location.assign(result.redirectTo ?? "/appointments");
+      window.location.assign(result.redirectTo ?? "/me/appointments");
       router.refresh();
     } catch {
       setFormError("建立面交失敗，請稍後再試。");
@@ -134,6 +141,9 @@ export function AppointmentForm({
               {fieldErrors.location}
             </p>
           ) : null}
+        </div>
+        <div className="sm:col-span-2">
+          <CampusMapPicker value={mapPoint} onChange={setMapPoint} />
         </div>
         <div>
           <label htmlFor="exchange-mode" className="font-bold">

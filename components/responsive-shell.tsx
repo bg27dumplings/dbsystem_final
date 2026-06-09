@@ -1,18 +1,21 @@
 import Link from "next/link";
 import { Home, MessageCircle, PlusCircle, Search, UserRound } from "lucide-react";
 import { StudentLogoutButton } from "@/components/auth/student-logout-button";
+import { PendingReviewPrompt } from "@/components/reviews/pending-review-prompt";
 import { getStudentSession } from "@/lib/auth/student-session";
+import { findPendingReviews } from "@/lib/marketplace/queries";
 
 const navItems = [
   { href: "/", label: "首頁", icon: Home },
   { href: "/search", label: "搜尋", icon: Search },
   { href: "/me/items/new", label: "上架", icon: PlusCircle },
   { href: "/chat", label: "聊天", icon: MessageCircle },
-  { href: "/me/items", label: "我的", icon: UserRound }
+  { href: "/me", label: "我的", icon: UserRound }
 ];
 
 export async function ResponsiveShell({ children }: { children: React.ReactNode }) {
   const session = await getStudentSession();
+  const pendingReviews = session ? await findPendingReviews(session.studentId) : [];
 
   return (
     <div className="min-h-screen">
@@ -50,6 +53,7 @@ export async function ResponsiveShell({ children }: { children: React.ReactNode 
         </div>
       </header>
       <main id="main-content" className="mx-auto max-w-7xl px-4 pb-24 pt-5 md:px-6 lg:pb-10">
+        {session ? <PendingReviewPrompt reviews={pendingReviews} /> : null}
         {children}
       </main>
       <nav aria-label="手機主要導覽" className="fixed inset-x-0 bottom-0 z-40 border-t border-campus-ink/10 bg-white/95 px-2 py-2 shadow-[0_-10px_30px_rgba(16,35,31,0.12)] backdrop-blur md:hidden safe-bottom">

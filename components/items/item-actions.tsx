@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import type { ItemStatus } from "@/lib/marketplace/domain/models";
 
 type OpenChatRoomResponse = {
   ok: boolean;
@@ -14,7 +15,7 @@ export function ItemActions({
   itemStatus
 }: {
   itemId: string;
-  itemStatus: "active" | "reserved" | "removed" | "violation_removed" | "deleted";
+  itemStatus: ItemStatus;
 }) {
   const [isOpeningChat, setIsOpeningChat] = useState(false);
   const [chatError, setChatError] = useState("");
@@ -74,7 +75,7 @@ export function ItemActions({
             aria-disabled="true"
             className="inline-flex min-h-12 items-center justify-center rounded-md bg-slate-400 px-4 py-3 font-black text-white"
           >
-            目前預約中
+            {itemStatus === "hidden" || itemStatus === "reserved" ? "名額已滿" : "目前無法預約"}
           </span>
         )}
       </div>

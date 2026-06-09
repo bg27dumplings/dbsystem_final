@@ -7,5 +7,8 @@ export {
   findItemById,
   findItemsByStudentId,
   findOwnedItemById,
-  findPublicItems
+  findPendingAppointmentCount,
+  findPendingReviews,
+  findPublicItems,
+  findStudentProfileById
 } from "@/lib/marketplace/application/marketplace-service";
