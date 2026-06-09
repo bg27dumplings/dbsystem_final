@@ -37,8 +37,7 @@ export function ChatRoom({
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [body, setBody] = useState("");
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState("");
+
   const [formError, setFormError] = useState("");
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -125,57 +124,7 @@ export function ChatRoom({
     }
   }
 
-  async function handleRecall(messageId: string) {
-    if (!window.confirm("確定要收回此訊息嗎？")) return;
 
-    try {
-      const res = await fetch(`/api/chat/messages/${encodeURIComponent(messageId)}`, {
-        method: "DELETE"
-      });
-      const result = await res.json();
-      if (!res.ok || !result.ok) {
-        alert(result.formError ?? "收回失敗。");
-        return;
-      }
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId
-            ? { ...m, messageType: "recalled", body: "訊息已收回" }
-            : m
-        )
-      );
-      router.refresh();
-    } catch {
-      alert("系統忙碌中，收回失敗。");
-    }
-  }
-
-  async function handleEditSave(messageId: string) {
-    if (!editingText.trim()) return;
-
-    try {
-      const res = await fetch(`/api/chat/messages/${encodeURIComponent(messageId)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: editingText })
-      });
-      const result = await res.json();
-      if (!res.ok || !result.ok) {
-        alert(result.formError ?? "編輯失敗。");
-        return;
-      }
-
-      setMessages((prev) =>
-        prev.map((m) => (m.id === messageId ? { ...m, body: editingText, isEdited: true } : m))
-      );
-      setEditingMessageId(null);
-      setEditingText("");
-      router.refresh();
-    } catch {
-      alert("系統忙碌中，編輯失敗。");
-    }
-  }
 
   return (
     <div className="flex flex-col rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10 h-[600px]">
@@ -244,59 +193,12 @@ export function ChatRoom({
                     isMine ? "bg-campus-moss text-white animate-fade-in" : "bg-campus-paper text-campus-ink ring-1 ring-campus-ink/5"
                   }`}
                 >
-                  {editingMessageId === message.id ? (
-                    <div className="space-y-2 text-campus-ink">
-                      <textarea
-                        value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
-                        className="w-full rounded border border-slate-300 p-1 text-sm bg-white"
-                        rows={2}
-                      />
-                      <div className="flex justify-end gap-1.5">
-                        <button
-                          onClick={() => setEditingMessageId(null)}
-                          className="px-2 py-1 bg-slate-200 text-slate-700 text-xs rounded font-bold"
-                        >
-                          取消
-                        </button>
-                        <button
-                          onClick={() => handleEditSave(message.id)}
-                          className="px-2 py-1 bg-campus-gold text-white text-xs rounded font-bold"
-                        >
-                          儲存
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
                       <p className="whitespace-pre-wrap break-words">
                         {message.body}
                         {message.isEdited && (
                           <span className="text-[10px] opacity-70 ml-2 italic select-none">(已編輯)</span>
                         )}
                       </p>
-                      {isMine && (
-                        <div className="opacity-0 group-hover:opacity-100 absolute -left-20 top-1/2 -translate-y-1/2 flex gap-1 bg-white p-1 rounded shadow-md ring-1 ring-slate-200 text-xs text-slate-600 transition-opacity">
-                          <button
-                            onClick={() => {
-                              setEditingMessageId(message.id);
-                              setEditingText(message.body);
-                            }}
-                            className="hover:text-campus-moss px-1 font-bold"
-                          >
-                            編輯
-                          </button>
-                          <span className="text-slate-300">|</span>
-                          <button
-                            onClick={() => handleRecall(message.id)}
-                            className="hover:text-campus-red px-1 font-bold"
-                          >
-                            收回
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
                 </div>
                 <time className="text-[10px] text-slate-400 mt-1 block px-1">{message.time}</time>
               </div>
