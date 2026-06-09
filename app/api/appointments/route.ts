@@ -25,6 +25,8 @@ export async function POST(request: Request) {
     itemId?: string;
     meetupAt?: string;
     location?: string;
+    locationX?: string;
+    locationY?: string;
     exchangeMode?: string;
     exchangeValue?: string;
     note?: string;
@@ -35,6 +37,8 @@ export async function POST(request: Request) {
     studentId: session.studentId,
     meetupAt: body.meetupAt ?? "",
     location: body.location ?? "",
+    locationX: body.locationX ?? "",
+    locationY: body.locationY ?? "",
     exchangeMode: body.exchangeMode ?? "",
     exchangeValue: body.exchangeValue ?? "",
     note: body.note ?? ""
@@ -50,6 +54,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json<CreateAppointmentResponse>({
     ok: true,
-    redirectTo: `/appointments/${result.appointmentId}?created=1`
+    redirectTo: `/me/appointments/${result.appointmentId}?created=1`
   });
 }

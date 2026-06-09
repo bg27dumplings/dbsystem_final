@@ -5,17 +5,26 @@ vendor/
 # Next.js
 .next/
 out/
+.turbo/
 next-env.d.ts
+vercel/
 
-# Environment files
+# Environment files (keep example templates)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.docker.example
 
-# Local agent instructions
+# Local agent / IDE
 AGENTS.md
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Uploads and generated assets
+# Uploads and user-generated assets
 public/uploads/
 admin/uploads/
 
@@ -26,21 +35,27 @@ yarn-error.log*
 pnpm-debug.log*
 *.log
 
-# OS / editor
+# OS
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
+desktop.ini
+ehthumbs.db
 
 # PHP / Composer
 composer.lock
 
-# Build and cache
+# Build, cache, and test output
 .cache/
 coverage/
 *.tsbuildinfo
+dist/
 
-# Local planning / Codex scratch files
+# Secrets and keys
+*.pem
+*.key
+*.p12
+
+# Local planning / scratch files
 Agent.md
 skill-list.md
 frontend-design/

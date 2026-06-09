@@ -25,12 +25,36 @@ export async function insertChatMessage(
     roomId: number;
     senderId: number;
     body: string;
+    messageType?: string;
   }
 ) {
   const [result] = await connection.execute<mysql.ResultSetHeader>(
     `INSERT INTO chat_messages (room_id, sender_id, message_type, body)
-     VALUES (?, ?, 'text', ?)`,
-    [input.roomId, input.senderId, input.body]
+     VALUES (?, ?, ?, ?)`,
+    [input.roomId, input.senderId, input.messageType ?? "text", input.body]
+  );
+
+  await connection.execute(
+    `UPDATE chat_rooms
+     SET updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [input.roomId]
+  );
+
+  return result.insertId;
+}
+
+export async function insertSystemChatMessage(
+  connection: mysql.PoolConnection,
+  input: {
+    roomId: number;
+    body: string;
+  }
+) {
+  const [result] = await connection.execute<mysql.ResultSetHeader>(
+    `INSERT INTO chat_messages (room_id, sender_id, message_type, body)
+     VALUES (?, NULL, 'system', ?)`,
+    [input.roomId, input.body]
   );
 
   await connection.execute(

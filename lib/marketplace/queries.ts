@@ -10,5 +10,8 @@ export {
   findItemsByStudentId,
   findOwnedItemById,
   findPublicItems,
-  countUnreadChatMessages
+  countUnreadChatMessages,
+  findPendingAppointmentCount,
+  findPendingReviews,
+  findStudentProfileById
 } from "@/lib/marketplace/application/marketplace-service";

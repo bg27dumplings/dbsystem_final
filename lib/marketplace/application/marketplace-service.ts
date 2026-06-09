@@ -1,3 +1,4 @@
+import { syncAppointmentLifecycle } from "@/lib/marketplace/application/appointment-lifecycle-service";
 import {
   findEditableMarketplaceItemById,
   findMarketplaceItemById,
@@ -6,20 +7,20 @@ import {
   findPublicMarketplaceItems
 } from "@/lib/marketplace/infrastructure/item-repository";
 import {
+  countPendingAppointmentsForStudent,
   findStudentAppointmentById,
   findStudentAppointmentDetailById,
   findStudentAppointments
 } from "@/lib/marketplace/infrastructure/appointment-repository";
 import { findStudentChatRoomById, findStudentChatRooms, countUnreadChatMessages as findUnreadCount } from "@/lib/marketplace/infrastructure/chat-repository";
 import { findActiveMarketplaceCategories } from "@/lib/marketplace/infrastructure/category-repository";
+import { findPendingReviewsForStudent } from "@/lib/marketplace/infrastructure/review-repository";
+import { findStudentProfile } from "@/lib/marketplace/infrastructure/student-profile-repository";
 
-export async function findPublicItems(filter?: {
-  keyword?: string;
-  categoryId?: string;
-  minPrice?: number;
-  maxPrice?: number;
-}) {
-  return findPublicMarketplaceItems(filter);
+import type { MarketplaceItemFilters } from "@/lib/marketplace/domain/models";
+
+export async function findPublicItems(filters: MarketplaceItemFilters = {}) {
+  return findPublicMarketplaceItems(filters);
 }
 
 export async function findItemById(itemId: string) {
@@ -39,15 +40,30 @@ export async function findEditableOwnedItemById(studentId: number, itemId: strin
 }
 
 export async function findAppointmentsByStudentId(studentId: number) {
+  await syncAppointmentLifecycle();
   return findStudentAppointments(studentId);
 }
 
 export async function findAppointmentByIdForStudent(studentId: number, appointmentId: string) {
+  await syncAppointmentLifecycle();
   return findStudentAppointmentById(studentId, appointmentId);
 }
 
 export async function findAppointmentDetailByIdForStudent(studentId: number, appointmentId: string) {
   return findStudentAppointmentDetailById(studentId, appointmentId);
+}
+
+export async function findPendingReviews(studentId: number) {
+  await syncAppointmentLifecycle();
+  return findPendingReviewsForStudent(studentId);
+}
+
+export async function findPendingAppointmentCount(studentId: number) {
+  return countPendingAppointmentsForStudent(studentId);
+}
+
+export async function findStudentProfileById(studentId: number) {
+  return findStudentProfile(studentId);
 }
 
 export async function findChatRoomsByStudentId(studentId: number) {

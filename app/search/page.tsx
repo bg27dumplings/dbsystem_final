@@ -1,15 +1,31 @@
 import { EmptyState } from "@/components/empty-state";
 import { FilterPanel } from "@/components/filter-panel";
 import { ItemCard } from "@/components/item-card";
-import { findPublicItems } from "@/lib/marketplace/queries";
+import { findActiveCategories, findPublicItems } from "@/lib/marketplace/queries";
 
-export default async function SearchPage() {
-  const items = await findPublicItems();
+export default async function SearchPage({
+  searchParams
+}: {
+  searchParams?: Promise<{
+    keyword?: string;
+    categoryId?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  }>;
+}) {
+  const params = await searchParams;
+  const filters = {
+    keyword: params?.keyword,
+    categoryId: params?.categoryId,
+    minPrice: params?.minPrice,
+    maxPrice: params?.maxPrice
+  };
+  const [categories, items] = await Promise.all([findActiveCategories(), findPublicItems(filters)]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
       <aside>
-        <FilterPanel />
+        <FilterPanel categories={categories} values={filters} />
       </aside>
       <section aria-labelledby="search-heading" className="space-y-4">
         <div>
@@ -17,6 +33,7 @@ export default async function SearchPage() {
           <h1 id="search-heading" className="text-3xl font-black text-campus-ink">
             找到剛好需要的二手物資
           </h1>
+          <p className="mt-2 text-sm text-slate-700">目前顯示 {items.length} 筆符合條件的物品。</p>
         </div>
         {items.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
@@ -26,10 +43,10 @@ export default async function SearchPage() {
           </div>
         ) : (
           <EmptyState
-            title="目前沒有可搜尋的物品"
-            description="公開物品列表目前是空的，所以搜尋結果不會顯示任何資料。"
-            actionLabel="回首頁"
-            actionHref="/"
+            title="目前沒有符合條件的物品"
+            description="試著調整關鍵字、分類或價格範圍後再搜尋一次。"
+            actionLabel="清除篩選"
+            actionHref="/search"
           />
         )}
       </section>

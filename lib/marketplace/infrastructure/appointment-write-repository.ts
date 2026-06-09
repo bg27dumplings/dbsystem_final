@@ -1,5 +1,6 @@
 import "server-only";
 import type mysql from "mysql2/promise";
+import type { AppointmentStatus } from "@/lib/marketplace/domain/models";
 
 export async function insertAppointment(
   connection: mysql.PoolConnection,
@@ -9,6 +10,8 @@ export async function insertAppointment(
     sellerId: number;
     meetupAt: string;
     location: string;
+    locationX: number | null;
+    locationY: number | null;
     amount: number;
     exchangeMode: string;
     exchangeValue: string | null;
@@ -22,18 +25,22 @@ export async function insertAppointment(
       seller_id,
       meetup_at,
       location,
+      location_x,
+      location_y,
       amount,
       exchange_mode,
       exchange_value,
       note,
       status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
     [
       input.itemId,
       input.buyerId,
       input.sellerId,
       input.meetupAt,
       input.location,
+      input.locationX,
+      input.locationY,
       input.amount,
       input.exchangeMode,
       input.exchangeValue,
@@ -46,42 +53,51 @@ export async function insertAppointment(
 
 export async function updateAppointmentStatus(
   connection: mysql.PoolConnection,
-  input: {
-    appointmentId: number;
-    nextStatus: "accepted" | "rejected" | "cancelled" | "completed" | "failed";
-    setCompletedAt?: boolean;
-  }
+  appointmentId: number,
+  status: AppointmentStatus,
+  completedAt: string | null = null
 ) {
   await connection.execute(
     `UPDATE appointments
-     SET status = ?,
-         completed_at = ${input.setCompletedAt ? "CURRENT_TIMESTAMP" : "NULL"}
+     SET status = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
-    [input.nextStatus, input.appointmentId]
+    [status, completedAt, appointmentId]
   );
 }
 
-export async function insertAppointmentReview(
+export async function rejectOtherPendingAppointments(
   connection: mysql.PoolConnection,
-  input: {
-    appointmentId: number;
-    reviewerId: number;
-    revieweeId: number;
-    rating: number;
-    comment: string;
-  }
+  itemId: number,
+  exceptAppointmentId: number
 ) {
+  await connection.execute(
+    `UPDATE appointments
+     SET status = 'rejected', updated_at = CURRENT_TIMESTAMP
+     WHERE item_id = ? AND id <> ? AND status = 'pending'`,
+    [itemId, exceptAppointmentId]
+  );
+}
+
+export async function updateItemStatus(
+  connection: mysql.PoolConnection,
+  itemId: number,
+  status: string
+) {
+  await connection.execute(
+    `UPDATE items
+     SET status = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [status, itemId]
+  );
+}
+
+export async function completeExpiredAcceptedAppointments(connection: mysql.PoolConnection) {
   const [result] = await connection.execute<mysql.ResultSetHeader>(
-    `INSERT INTO reviews (
-      appointment_id,
-      reviewer_id,
-      reviewee_id,
-      rating,
-      comment,
-      status
-    ) VALUES (?, ?, ?, ?, ?, 'visible')`,
-    [input.appointmentId, input.reviewerId, input.revieweeId, input.rating, input.comment]
+    `UPDATE appointments
+     SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+     WHERE status = 'accepted' AND meetup_at <= NOW()`
   );
 
-  return result.insertId;
+  return result.affectedRows;
 }
+

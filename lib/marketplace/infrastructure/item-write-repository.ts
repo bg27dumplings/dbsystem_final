@@ -9,6 +9,9 @@ type CreateMarketplaceItemRecordInput = {
   exchangeNote: string;
   conditionLabel: string;
   location: string;
+  quantity: number;
+  locationX: number | null;
+  locationY: number | null;
   originalPrice: number;
   salePrice: number | null;
 };
@@ -56,10 +59,13 @@ export async function insertMarketplaceItem(
       exchange_note,
       condition_label,
       location,
+      quantity,
+      location_x,
+      location_y,
       original_price,
       sale_price,
       status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
     [
       input.studentId,
       input.categoryId,
@@ -68,6 +74,9 @@ export async function insertMarketplaceItem(
       input.exchangeNote,
       input.conditionLabel,
       input.location,
+      input.quantity,
+      input.locationX,
+      input.locationY,
       input.originalPrice,
       input.salePrice
     ]
@@ -182,4 +191,59 @@ export async function updateMarketplaceItemStatus(
      WHERE id = ? AND student_id = ?`,
     [input.nextStatus, input.itemId, input.studentId]
   );
+}
+
+type UpdateMarketplaceItemRecordInput = {
+  itemId: number;
+  categoryId: number;
+  title: string;
+  description: string;
+  exchangeNote: string;
+  conditionLabel: string;
+  location: string;
+  quantity: number;
+  locationX: number | null;
+  locationY: number | null;
+  originalPrice: number;
+  salePrice: number | null;
+};
+
+export async function updateMarketplaceItemRecord(
+  connection: mysql.PoolConnection,
+  input: UpdateMarketplaceItemRecordInput
+) {
+  await connection.execute(
+    `UPDATE items
+     SET category_id = ?,
+         title = ?,
+         description = ?,
+         exchange_note = ?,
+         condition_label = ?,
+         location = ?,
+         quantity = ?,
+         location_x = ?,
+         location_y = ?,
+         original_price = ?,
+         sale_price = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [
+      input.categoryId,
+      input.title,
+      input.description,
+      input.exchangeNote,
+      input.conditionLabel,
+      input.location,
+      input.quantity,
+      input.locationX,
+      input.locationY,
+      input.originalPrice,
+      input.salePrice,
+      input.itemId
+    ]
+  );
+}
+
+export async function deleteMarketplaceItemImages(connection: mysql.PoolConnection, itemId: number) {
+  await connection.execute(`DELETE FROM item_images WHERE item_id = ?`, [itemId]);
 }

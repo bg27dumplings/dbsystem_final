@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ExchangeSummary } from "@/components/exchange-summary";
 import { ItemActions } from "@/components/items/item-actions";
+import { CampusMapDisplay } from "@/components/location/campus-map-display";
+import { StarRating } from "@/components/reviews/star-rating";
 import { StatusBadge } from "@/components/status-badge";
 import { findItemById } from "@/lib/marketplace/queries";
-import { getStudentStats } from "@/lib/auth/student-repository";
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,8 +20,6 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
       </section>
     );
   }
-
-  const stats = await getStudentStats(Number(item.sellerId));
 
   return (
     <article className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
@@ -43,15 +42,17 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
         </div>
         <div>
           <h1 className="text-3xl font-black leading-tight text-campus-ink">{item.title}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-slate-700">
-            <span className="font-bold">{item.seller}</span>
-            <span className="text-slate-400">|</span>
-            <span>已交易 {stats.totalDeals} 次</span>
-            <span className="text-slate-400">|</span>
-            <span>
-              評價 {stats.avgRating !== null ? `${stats.avgRating} ★` : "暫無"} 
-              {stats.totalReviews > 0 ? ` (${stats.totalReviews} 則)` : ""}
-            </span>
+          <div className="mt-2 space-y-2">
+            <p className="font-bold text-campus-ink">{item.seller}</p>
+            {item.sellerRating && item.sellerRating.reviewCount > 0 ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                <StarRating value={item.sellerRating.averageRating} readonly />
+                <span>（{item.sellerRating.reviewCount} 則評價）</span>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600">尚未累積評價</p>
+            )}
+            {item.sellerBio ? <p className="text-sm leading-6 text-slate-700">{item.sellerBio}</p> : null}
           </div>
         </div>
         <ExchangeSummary exchangeMode={item.exchangeMode} exchangeLabel={item.exchangeLabel} salePrice={item.salePrice} />
@@ -60,9 +61,15 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
             <dt className="font-black">交換條件</dt>
             <dd>{item.exchangeLabel}</dd>
           </div>
-          <div>
+          <div className="sm:col-span-2">
+            <dt className="font-black">數量</dt>
+            <dd>{item.quantity}</dd>
+          </div>
+          <div className="sm:col-span-2">
             <dt className="font-black">面交地點</dt>
-            <dd>{item.location}</dd>
+            <dd className="mt-1">
+              <CampusMapDisplay location={item.location} mapPoint={item.mapPoint} />
+            </dd>
           </div>
         </dl>
         <p className="leading-7 text-slate-700">{item.description}</p>

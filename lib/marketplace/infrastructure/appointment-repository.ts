@@ -1,13 +1,14 @@
 import "server-only";
 import { RowDataPacket } from "mysql2";
 import { getDbPool } from "@/lib/db";
-import type { AppointmentDetail, AppointmentSummary, ItemStatus } from "@/lib/marketplace/domain/models";
-import { mapAppointmentDetail, mapAppointmentReview, mapAppointmentSummary } from "@/lib/marketplace/domain/mappers";
+import type { AppointmentSummary } from "@/lib/marketplace/domain/models";
+import { mapAppointmentSummary } from "@/lib/marketplace/domain/mappers";
 
 type AppointmentRow = RowDataPacket & {
   id: number;
   item_id: number;
-  item_status: ItemStatus;
+  buyer_id: number;
+  seller_id: number;
   meetup_at: Date | string;
   location: string;
   amount: number;
@@ -18,24 +19,22 @@ type AppointmentRow = RowDataPacket & {
   item_title: string;
   buyer_name: string;
   seller_name: string;
-  buyer_id: number;
-  seller_id: number;
 };
 
-type AppointmentReviewRow = RowDataPacket & {
+export type AppointmentRecord = {
   id: number;
-  reviewer_id: number;
-  reviewer_name: string;
-  reviewee_id: number;
-  reviewee_name: string;
-  rating: number;
-  comment: string;
-  status: string;
-  created_at: Date | string;
+  itemId: number;
+  buyerId: number;
+  sellerId: number;
+  status: AppointmentSummary["status"];
+  meetupAt: Date | string;
+  location: string;
+  itemTitle: string;
+  buyerName: string;
+  sellerName: string;
 };
 
-const SELECT_APPOINTMENT_FIELDS = `SELECT a.id, a.item_id, i.status AS item_status, a.meetup_at, a.location, a.amount, a.exchange_mode, a.exchange_value, a.note, a.status,
-        a.buyer_id, a.seller_id,
+const SELECT_APPOINTMENT_FIELDS = `SELECT a.id, a.item_id, a.buyer_id, a.seller_id, a.meetup_at, a.location, a.location_x, a.location_y, a.amount, a.exchange_mode, a.exchange_value, a.note, a.status,
         i.title AS item_title,
         buyer.name AS buyer_name,
         seller.name AS seller_name
@@ -43,6 +42,21 @@ const SELECT_APPOINTMENT_FIELDS = `SELECT a.id, a.item_id, i.status AS item_stat
  JOIN items i ON i.id = a.item_id
  JOIN students buyer ON buyer.id = a.buyer_id
  JOIN students seller ON seller.id = a.seller_id`;
+
+function mapAppointmentRecord(row: AppointmentRow): AppointmentRecord {
+  return {
+    id: row.id,
+    itemId: row.item_id,
+    buyerId: row.buyer_id,
+    sellerId: row.seller_id,
+    status: row.status,
+    meetupAt: row.meetup_at,
+    location: row.location,
+    itemTitle: row.item_title,
+    buyerName: row.buyer_name,
+    sellerName: row.seller_name
+  };
+}
 
 export async function findStudentAppointments(studentId: number) {
   const pool = getDbPool();
@@ -53,7 +67,7 @@ export async function findStudentAppointments(studentId: number) {
     [studentId, studentId]
   );
 
-  return rows.map(mapAppointmentSummary);
+  return rows.map((row) => mapAppointmentSummary(row, studentId));
 }
 
 export async function findStudentAppointmentById(studentId: number, appointmentId: string) {
@@ -66,33 +80,54 @@ export async function findStudentAppointmentById(studentId: number, appointmentI
   );
 
   const row = rows[0];
-  return row ? mapAppointmentSummary(row) : null;
+  return row ? mapAppointmentSummary(row, studentId) : null;
 }
 
-export async function findStudentAppointmentDetailById(studentId: number, appointmentId: string): Promise<AppointmentDetail | null> {
+export async function findAppointmentRecordById(appointmentId: string) {
   const pool = getDbPool();
   const [rows] = await pool.execute<AppointmentRow[]>(
     `${SELECT_APPOINTMENT_FIELDS}
-     WHERE a.id = ? AND (a.buyer_id = ? OR a.seller_id = ?)
+     WHERE a.id = ?
      LIMIT 1`,
-    [appointmentId, studentId, studentId]
-  );
-
-  const row = rows[0];
-  if (!row) {
-    return null;
-  }
-
-  const [reviewRows] = await pool.execute<AppointmentReviewRow[]>(
-    `SELECT r.id, r.reviewer_id, reviewer.name AS reviewer_name, r.reviewee_id, reviewee.name AS reviewee_name,
-            r.rating, r.comment, r.status, r.created_at
-     FROM reviews r
-     JOIN students reviewer ON reviewer.id = r.reviewer_id
-     JOIN students reviewee ON reviewee.id = r.reviewee_id
-     WHERE r.appointment_id = ?
-     ORDER BY r.created_at ASC, r.id ASC`,
     [appointmentId]
   );
 
-  return mapAppointmentDetail(row, studentId, reviewRows.map(mapAppointmentReview));
+  const row = rows[0];
+  return row ? mapAppointmentRecord(row) : null;
+}
+
+export async function countActiveAppointmentsForItem(itemId: number) {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `SELECT COUNT(*) AS total
+     FROM appointments
+     WHERE item_id = ? AND status = 'accepted'`,
+    [itemId]
+  );
+
+  return Number(rows[0]?.total ?? 0);
+}
+
+export async function countPendingAppointmentsForStudent(studentId: number) {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `SELECT COUNT(*) AS total
+     FROM appointments
+     WHERE (buyer_id = ? OR seller_id = ?) AND status = 'pending'`,
+    [studentId, studentId]
+  );
+
+  return Number(rows[0]?.total ?? 0);
+}
+
+export async function hasPendingAppointmentForBuyerItem(itemId: number, buyerId: number) {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `SELECT COUNT(*) AS total
+     FROM appointments
+     WHERE item_id = ? AND buyer_id = ? AND status IN ('pending', 'accepted')`,
+    [itemId, buyerId]
+  );
+
+  return Number(rows[0]?.total ?? 0) > 0;
 }

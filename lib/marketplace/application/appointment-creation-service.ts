@@ -1,14 +1,20 @@
 import "server-only";
 import { revalidatePath } from "next/cache";
 import { getDbPool } from "@/lib/db";
+import { formatDateTime } from "@/lib/marketplace/domain/mappers";
 import { buildExchangeDescriptor, normalizeExchangeMode } from "@/lib/marketplace/domain/exchange";
+import { countAcceptedAppointmentsForItem } from "@/lib/marketplace/application/item-availability-service";
+import { hasPendingAppointmentForBuyerItem } from "@/lib/marketplace/infrastructure/appointment-repository";
 import { insertAppointment } from "@/lib/marketplace/infrastructure/appointment-write-repository";
+import { findOrCreateChatRoom, insertSystemChatMessage } from "@/lib/marketplace/infrastructure/chat-write-repository";
 import { findMarketplaceItemActionContext } from "@/lib/marketplace/infrastructure/item-repository";
 
 export type CreateAppointmentFieldErrors = {
   itemId?: string;
   meetupAt?: string;
   location?: string;
+  locationX?: string;
+  locationY?: string;
   exchangeMode?: string;
   exchangeValue?: string;
   note?: string;
@@ -60,6 +66,8 @@ export async function createAppointment(input: {
   studentId: number;
   meetupAt: string;
   location: string;
+  locationX: string;
+  locationY: string;
   exchangeMode: string;
   exchangeValue: string;
   note: string;
@@ -82,6 +90,13 @@ export async function createAppointment(input: {
       fieldErrors.itemId = "不能對自己的物品提出面交。";
     } else if (item.status !== "active") {
       fieldErrors.itemId = "這筆物品目前無法建立新面交。";
+    } else {
+      const acceptedCount = await countAcceptedAppointmentsForItem(Number(item.id));
+      if (acceptedCount >= item.quantity) {
+        fieldErrors.itemId = "這筆物品的預約名額已滿。";
+      } else if (await hasPendingAppointmentForBuyerItem(Number(item.id), input.studentId)) {
+        fieldErrors.itemId = "你已經對這筆物品提出過面交預約。";
+      }
     }
   }
 
@@ -126,19 +141,33 @@ export async function createAppointment(input: {
       sellerId: item.sellerId,
       meetupAt: formatDateTimeForDb(meetupDate),
       location,
+      locationX: input.locationX.trim() ? Number(input.locationX) : null,
+      locationY: input.locationY.trim() ? Number(input.locationY) : null,
       amount: exchange.amount,
       exchangeMode: exchange.exchangeMode,
       exchangeValue: exchange.exchangeValue,
       note: note || null
     });
+
+    const roomId = await findOrCreateChatRoom(connection, {
+      itemId: Number(item.id),
+      buyerId: input.studentId,
+      sellerId: item.sellerId
+    });
+
+    await insertSystemChatMessage(connection, {
+      roomId,
+      body: `買家提出了面交預約「${item.title}」。時間：${formatDateTime(meetupDate)}，地點：${location}。請至「我的預約」查看並回覆。`
+    });
+
     await connection.commit();
 
-    try {
-      revalidatePath("/appointments");
-      revalidatePath(`/appointments/${appointmentId}`);
-    } catch (e) {
-      console.error("Failed to revalidate cache:", e);
-    }
+    revalidatePath("/me/appointments");
+    revalidatePath(`/me/appointments/${appointmentId}`);
+    revalidatePath("/appointments");
+    revalidatePath(`/appointments/${appointmentId}`);
+    revalidatePath("/chat");
+    revalidatePath(`/chat/${roomId}`);
 
     return {
       ok: true,

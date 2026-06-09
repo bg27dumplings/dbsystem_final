@@ -4,6 +4,9 @@ export type CreateMarketplaceItemInput = {
   categoryId: string;
   conditionLabel: string;
   location: string;
+  quantity: string;
+  locationX: string;
+  locationY: string;
   exchangeMode: string;
   exchangeValue: string;
   description: string;
@@ -15,6 +18,7 @@ export type CreateMarketplaceItemField =
   | "categoryId"
   | "conditionLabel"
   | "location"
+  | "quantity"
   | "exchangeMode"
   | "exchangeValue"
   | "description"
@@ -39,7 +43,10 @@ export type ValidatedMarketplaceItemInput = {
   categoryId: number;
   conditionLabel: string;
   location: string;
-  exchangeMode: "price" | "treat_drink" | "treat_food" | "free" | "custom";
+  quantity: number;
+  locationX: number | null;
+  locationY: number | null;
+  exchangeMode: "price" | "treat_drink" | "treat_food" | "free";
   exchangeLabel: string;
   exchangeValue: string | null;
   originalPrice: number;
