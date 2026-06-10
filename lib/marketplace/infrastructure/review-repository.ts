@@ -77,3 +77,48 @@ export async function insertReview(input: {
     [input.appointmentId, input.reviewerId, input.revieweeId, input.rating, input.comment]
   );
 }
+
+export type StudentReview = {
+  id: number;
+  rating: number;
+  comment: string;
+  reviewerName: string;
+  itemTitle: string;
+  role: "buyer" | "seller";
+  createdAt: string;
+};
+
+export async function findReviewsForStudent(studentId: number): Promise<StudentReview[]> {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<
+    (import("mysql2").RowDataPacket & {
+      id: number;
+      rating: number;
+      comment: string;
+      reviewer_name: string;
+      item_title: string;
+      buyer_id: number;
+      seller_id: number;
+      created_at: Date;
+    })[]
+  >(
+    `SELECT r.id, r.rating, r.comment, s.name AS reviewer_name, i.title AS item_title, a.buyer_id, a.seller_id, r.created_at
+     FROM reviews r
+     JOIN students s ON s.id = r.reviewer_id
+     JOIN appointments a ON a.id = r.appointment_id
+     JOIN items i ON i.id = a.item_id
+     WHERE r.reviewee_id = ? AND r.status = 'visible'
+     ORDER BY r.created_at DESC`,
+    [studentId]
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    rating: row.rating,
+    comment: row.comment,
+    reviewerName: row.reviewer_name,
+    itemTitle: row.item_title,
+    role: row.seller_id === studentId ? "seller" : "buyer",
+    createdAt: row.created_at.toISOString()
+  }));
+}

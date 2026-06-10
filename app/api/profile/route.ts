@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 type ProfileResponse = {
   ok: boolean;
   formError?: string;
-  fieldErrors?: { bio?: string };
+  fieldErrors?: { name?: string; email?: string; bio?: string };
 };
 
 export async function PUT(request: Request) {
@@ -19,11 +19,15 @@ export async function PUT(request: Request) {
     }, { status: 401 });
   }
 
+  let name: string;
+  let email: string;
   let bio: string;
   let avatarUrl: string | null = null;
 
   try {
     const formData = await request.formData();
+    name = (formData.get("name") as string) ?? "";
+    email = (formData.get("email") as string) ?? "";
     bio = (formData.get("bio") as string) ?? "";
     avatarUrl = formData.get("avatarUrl") as string | null;
     const avatarFile = formData.get("avatarFile") as File | null;
@@ -36,6 +40,22 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "無效的請求格式" }, { status: 400 });
   }
 
+  if (!name.trim()) {
+    return NextResponse.json<ProfileResponse>({
+      ok: false,
+      formError: "請先修正欄位內容。",
+      fieldErrors: { name: "姓名不可為空。" }
+    }, { status: 400 });
+  }
+  
+  if (!email.trim() || !email.includes("@")) {
+    return NextResponse.json<ProfileResponse>({
+      ok: false,
+      formError: "請先修正欄位內容。",
+      fieldErrors: { email: "請輸入有效的信箱格式。" }
+    }, { status: 400 });
+  }
+
   if (bio.trim().length > 500) {
     return NextResponse.json<ProfileResponse>({
       ok: false,
@@ -44,7 +64,19 @@ export async function PUT(request: Request) {
     }, { status: 400 });
   }
 
-  await updateStudentProfile(session.studentId, bio.trim(), avatarUrl ?? null);
+  const result = await updateStudentProfile(session.studentId, name.trim(), email.trim(), bio.trim(), avatarUrl ?? null);
+  
+  if (!result.ok) {
+    if (result.error === "email_taken") {
+      return NextResponse.json<ProfileResponse>({
+        ok: false,
+        formError: "儲存失敗",
+        fieldErrors: { email: "此信箱已被使用。" }
+      }, { status: 400 });
+    }
+    return NextResponse.json<ProfileResponse>({ ok: false, formError: "發生未知錯誤。" }, { status: 500 });
+  }
+
   revalidatePath("/me/profile");
   revalidatePath("/me");
 
