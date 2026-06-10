@@ -8,7 +8,7 @@ import { countUnreadChatMessages, countUnreadAppointments, findPendingReviews } 
 const navItems = [
   { href: "/", label: "首頁", icon: Home },
   { href: "/search", label: "搜尋", icon: Search },
-  { href: "/me/items/new", label: "上架", icon: PlusCircle },
+  { href: "/items/new", label: "上架", icon: PlusCircle },
   { href: "/me", label: "我的", icon: UserRound }
 ];
 
