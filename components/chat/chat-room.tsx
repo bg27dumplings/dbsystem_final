@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User } from "lucide-react";
+import { User, Star } from "lucide-react";
 
 type ChatMessage = {
   id: string;
@@ -16,6 +16,7 @@ type ChatMessage = {
 
 type ChatRoomProps = {
   roomId: string;
+  itemId: number;
   itemTitle: string;
   counterpartName: string;
   counterpartAvatarUrl?: string;
@@ -30,6 +31,7 @@ type ChatRoomProps = {
 
 export function ChatRoom({
   roomId,
+  itemId,
   itemTitle,
   counterpartName,
   counterpartAvatarUrl,
@@ -155,8 +157,13 @@ export function ChatRoom({
                   與 <span className="font-bold group-hover:text-campus-moss transition-colors">{counterpartName}</span> 的對話
                   <span className="ml-2 text-slate-400">|</span>
                   <span className="ml-2">已交易 {counterpartStats.totalDeals} 次</span>
-                  <span className="ml-2">
-                    評價 {counterpartStats.avgRating !== null ? `${counterpartStats.avgRating} ★` : "暫無"}
+                  <span className="ml-2 flex items-center gap-0.5">
+                    評價 {counterpartStats.avgRating !== null ? (
+                      <>
+                        {counterpartStats.avgRating}
+                        <Star className="h-3 w-3 fill-campus-gold text-campus-gold" />
+                      </>
+                    ) : "暫無"}
                   </span>
                 </p>
               </div>
@@ -174,7 +181,10 @@ export function ChatRoom({
                   <h4 className="text-sm font-black text-campus-ink">{counterpartName}</h4>
                   <div className="flex items-center pt-2 gap-4">
                     <div className="flex items-center text-xs text-slate-500">
-                      <span className="font-bold text-campus-moss mr-1">{counterpartStats.avgRating ?? "0.0"}</span> 評價
+                      <span className="font-bold text-campus-moss mr-1 flex items-center gap-0.5">
+                        {counterpartStats.avgRating ?? "0.0"}
+                        <Star className="h-3 w-3 fill-campus-gold text-campus-gold" />
+                      </span> 評價
                     </div>
                     <div className="flex items-center text-xs text-slate-500">
                       <span className="font-bold text-campus-moss mr-1">{counterpartStats.totalReviews}</span> 則評論
@@ -188,10 +198,15 @@ export function ChatRoom({
             </div>
           </div>
         </div>
-        <p className="text-xs text-slate-400 hidden sm:block">即時對話視窗</p>
+        <div className="flex items-center gap-2">
+          <Link 
+            href={`/appointments/new?itemId=${itemId}`}
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-campus-moss px-3 text-sm font-bold text-white hover:bg-campus-ink"
+          >
+            建立預約
+          </Link>
+        </div>
       </div>
-
-      {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
         {messages.length > 0 ? (
           messages.map((message) => {

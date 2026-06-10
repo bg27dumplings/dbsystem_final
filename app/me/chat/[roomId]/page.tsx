@@ -33,6 +33,7 @@ export default async function ChatRoomPage({ params }: { params: Promise<{ roomI
     <div className="mx-auto max-w-3xl">
       <ChatRoom
         roomId={room.roomId}
+        itemId={room.itemId}
         itemTitle={room.itemTitle}
         counterpartName={room.counterpartName}
         counterpartAvatarUrl={room.counterpartAvatarUrl}

@@ -43,15 +43,19 @@ export function AppointmentForm({
   const parsedLoc = useMemo(() => {
     const locString = initialLocation || "";
     const parts = locString.split(" - ");
-    if (parts[0] === "英才校區" || parts[0] === "民生校區" || parts[0] === "宿舍") {
+    if (parts[0] === "英才校區" || parts[0] === "民生校區") {
       const campus = parts[0];
       const detail = parts[1] || "其他";
       // Loose validation for initial load
       const custom = parts.slice(2).join(" - ") || (detail === "其他" ? parts.slice(1).join(" - ") : "");
       return { campus, detail, custom };
+    } else if (parts[0] === "宿舍") {
+      const detail = parts[1] || "其他";
+      const custom = parts.slice(2).join(" - ") || (detail === "其他" ? parts.slice(1).join(" - ") : "");
+      return { campus: "民生校區", detail, custom };
     }
     if (locString === "英才校區" || locString === "民生校區" || locString === "宿舍") {
-      return { campus: locString, detail: "其他", custom: "" };
+      return { campus: locString === "宿舍" ? "民生校區" : locString, detail: "其他", custom: "" };
     }
     return { campus: "其他", detail: "其他", custom: locString };
   }, [initialLocation]);
@@ -246,11 +250,7 @@ export function AppointmentForm({
               />
             </>
           ) : null}
-          {exchangeMode === "free" ? (
-            <div className="rounded-lg bg-campus-paper px-4 py-3 text-sm font-semibold text-campus-ink">
-              此次面交將以免費贈送顯示。
-            </div>
-          ) : null}
+
           {exchangeMode === "custom" ? (
             <>
               <label htmlFor="exchange-value" className="font-bold">
@@ -296,6 +296,11 @@ export function AppointmentForm({
           ) : null}
         </div>
       </div>
+      {exchangeMode === "free" ? (
+        <div className="rounded-lg border-2 border-campus-moss bg-campus-moss/5 px-4 py-4 text-sm font-black text-campus-moss mt-6">
+          🎁 此次面交為免費贈送，對方無需支付任何費用或交換物品。
+        </div>
+      ) : null}
       <button
         type="submit"
         disabled={isSubmitting}

@@ -64,12 +64,19 @@ export default async function NewAppointmentPage({
     <section className="mx-auto max-w-3xl rounded-lg bg-white p-5 shadow-sm ring-1 ring-campus-ink/10" aria-labelledby="new-appointment-heading">
       <p className="text-sm font-black text-campus-moss">面交預約</p>
       <h1 id="new-appointment-heading" className="text-3xl font-black text-campus-ink">建立面交預約</h1>
-      <div className="mt-5 rounded-lg bg-campus-paper p-4">
-        <p className="text-sm font-black text-campus-moss">預約物品</p>
-        <h2 className="mt-1 text-2xl font-black text-campus-ink">{item.title}</h2>
-        <p className="mt-1 text-sm text-slate-700">{item.seller}</p>
-        <div className="mt-3">
-          <ExchangeSummary exchangeMode={item.exchangeMode} exchangeLabel={item.exchangeLabel} salePrice={item.salePrice} />
+      <div className="mt-5 rounded-lg bg-campus-paper p-4 flex gap-4 items-start">
+        {item.images && item.images.length > 0 && (
+          <div className="flex-shrink-0">
+             <img src={item.images[0]} alt={item.title} className="h-24 w-24 rounded-md object-cover" />
+          </div>
+        )}
+        <div>
+          <p className="text-sm font-black text-campus-moss">預約物品</p>
+          <h2 className="mt-1 text-2xl font-black text-campus-ink">{item.title}</h2>
+          <p className="mt-1 text-sm text-slate-700">{item.seller}</p>
+          <div className="mt-3">
+            <ExchangeSummary exchangeMode={item.exchangeMode} exchangeLabel={item.exchangeLabel} salePrice={item.salePrice} />
+          </div>
         </div>
       </div>
       <AppointmentForm
