@@ -3,6 +3,32 @@
 import { MouseEvent } from "react";
 import type { MapCoordinate } from "@/lib/marketplace/domain/models";
 import { MINSHENG_BUILDINGS, OTHER_CAMPUS_LOCATIONS } from "@/lib/marketplace/domain/campus-locations";
+import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
+import { ZoomIn, ZoomOut } from "lucide-react";
+
+function MapControls() {
+  const { zoomIn, zoomOut } = useControls();
+  return (
+    <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2 rounded-lg bg-white p-1 shadow-md ring-1 ring-campus-ink/10">
+      <button
+        type="button"
+        onClick={() => zoomIn()}
+        className="flex h-8 w-8 items-center justify-center rounded bg-white text-campus-ink hover:bg-slate-100"
+        aria-label="放大"
+      >
+        <ZoomIn size={18} />
+      </button>
+      <button
+        type="button"
+        onClick={() => zoomOut()}
+        className="flex h-8 w-8 items-center justify-center rounded bg-white text-campus-ink hover:bg-slate-100"
+        aria-label="縮小"
+      >
+        <ZoomOut size={18} />
+      </button>
+    </div>
+  );
+}
 
 type InteractiveCampusPickerProps = {
   campus: string;
@@ -28,10 +54,12 @@ export function InteractiveCampusPicker({
   fieldError
 }: InteractiveCampusPickerProps) {
   
-  // Group Minsheng buildings
+  // Group Minsheng buildings and deduplicate names (supports multiple coordinate points for large buildings)
   const minshengGroups = MINSHENG_BUILDINGS.reduce((acc, curr) => {
     if (!acc[curr.group]) acc[curr.group] = [];
-    acc[curr.group].push(curr.name);
+    if (!acc[curr.group].includes(curr.name)) {
+      acc[curr.group].push(curr.name);
+    }
     return acc;
   }, {} as Record<string, string[]>);
 
@@ -104,7 +132,6 @@ export function InteractiveCampusPicker({
           >
             <option value="英才校區">英才校區</option>
             <option value="民生校區">民生校區</option>
-            <option value="宿舍">宿舍</option>
             <option value="其他">其他</option>
           </select>
         </div>
@@ -160,21 +187,28 @@ export function InteractiveCampusPicker({
           <p className="text-sm font-bold text-campus-ink flex items-center gap-2">
             💡 提示：點擊地圖也可快速選擇大樓
           </p>
-          <div
-            className="relative cursor-crosshair overflow-hidden rounded-lg border border-campus-ink/10 bg-white"
-            onClick={handleMapClick}
-            role="button"
-            tabIndex={0}
-            aria-label="校園平面圖選點"
-          >
-            <img src="/images/campus-map.png" alt="民生校區平面圖" className="w-full object-contain" />
-            {mapPoint && (
-              <span
-                className="absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-campus-red shadow-lg transition-all duration-300 ease-out"
-                style={{ left: `${mapPoint.x}%`, top: `${mapPoint.y}%` }}
-                aria-hidden="true"
-              />
-            )}
+          <div className="relative overflow-hidden rounded-lg border border-campus-ink/10 bg-white">
+            <TransformWrapper initialScale={1} minScale={1} maxScale={4} centerOnInit limitToBounds={true}>
+              <TransformComponent wrapperClass="w-full h-full cursor-crosshair active:cursor-grabbing" contentClass="w-full relative">
+                <div
+                  className="relative w-full"
+                  onClick={handleMapClick}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="校園平面圖選點"
+                >
+                  <img src="/images/campus-map.jpg" alt="民生校區平面圖" className="w-full object-contain pointer-events-none" />
+                  {mapPoint && (
+                    <span
+                      className="absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-campus-red shadow-lg transition-all duration-300 ease-out pointer-events-none"
+                      style={{ left: `${mapPoint.x}%`, top: `${mapPoint.y}%` }}
+                      aria-hidden="true"
+                    />
+                  )}
+                </div>
+              </TransformComponent>
+              <MapControls />
+            </TransformWrapper>
           </div>
         </div>
       )}
