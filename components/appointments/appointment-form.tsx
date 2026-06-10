@@ -2,7 +2,9 @@
 
 import { FormEvent, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { InteractiveCampusPicker } from "@/components/location/interactive-campus-picker";
 import { describedBy } from "@/lib/a11y";
+import type { MapCoordinate } from "@/lib/marketplace/domain/models";
 import { MARKETPLACE_EXCHANGE_MODE_LABELS } from "@/lib/marketplace/domain/constants";
 
 type CreateAppointmentFieldErrors = {
@@ -22,38 +24,6 @@ type AppointmentFormResponse = {
 };
 
 type ExchangeMode = "price" | "treat_drink" | "treat_food" | "free" | "custom";
-
-const CAMPUS_LOCATIONS: { [key: string]: string[] } = {
-  "英才校區": ["網球場", "汽機車停車場", "大門", "英才樓", "寶成演藝廳", "其他"],
-  "民生校區": [
-    "求真樓",
-    "圖書館",
-    "美術樓",
-    "忠義樓",
-    "樂群樓",
-    "中正樓",
-    "音樂樓",
-    "行政樓",
-    "科學樓",
-    "勤樸樓",
-    "教育樓",
-    "環境樓",
-    "數學樓",
-    "側門",
-    "操場",
-    "學生社團",
-    "大門",
-    "其他"
-  ],
-  "宿舍": [
-    "迎曦樓",
-    "大詠絮樓",
-    "小詠絮樓",
-    "莊敬苑",
-    "其他"
-  ],
-  "其他": ["其他"]
-};
 
 export function AppointmentForm({
   itemId,
@@ -75,15 +45,10 @@ export function AppointmentForm({
     const parts = locString.split(" - ");
     if (parts[0] === "英才校區" || parts[0] === "民生校區" || parts[0] === "宿舍") {
       const campus = parts[0];
-      const campusDetails = CAMPUS_LOCATIONS[campus] || [];
-      const detail = parts[1];
-      if (detail && campusDetails.includes(detail) && detail !== "其他") {
-        const custom = parts.slice(2).join(" - ");
-        return { campus, detail, custom };
-      } else {
-        const custom = parts.slice(1).join(" - ");
-        return { campus, detail: "其他", custom };
-      }
+      const detail = parts[1] || "其他";
+      // Loose validation for initial load
+      const custom = parts.slice(2).join(" - ") || (detail === "其他" ? parts.slice(1).join(" - ") : "");
+      return { campus, detail, custom };
     }
     if (locString === "英才校區" || locString === "民生校區" || locString === "宿舍") {
       return { campus: locString, detail: "其他", custom: "" };
@@ -94,6 +59,7 @@ export function AppointmentForm({
   const [campus, setCampus] = useState(parsedLoc.campus);
   const [detailLocation, setDetailLocation] = useState(parsedLoc.detail);
   const [customLocation, setCustomLocation] = useState(parsedLoc.custom);
+  const [mapPoint, setMapPoint] = useState<MapCoordinate | undefined>(undefined);
   const [exchangeMode, setExchangeMode] = useState<ExchangeMode>(initialExchangeMode);
   const [exchangeValue, setExchangeValue] = useState(initialExchangeValue);
   const [note, setNote] = useState("");
@@ -127,6 +93,8 @@ export function AppointmentForm({
           itemId,
           meetupAt,
           location: combinedLocation,
+          locationX: mapPoint ? String(mapPoint.x) : "",
+          locationY: mapPoint ? String(mapPoint.y) : "",
           exchangeMode,
           exchangeValue,
           note
@@ -182,68 +150,18 @@ export function AppointmentForm({
             </p>
           ) : null}
         </div>
-        <div className="sm:col-span-2 grid gap-4 sm:grid-cols-3">
-          <div>
-            <label htmlFor="campus-select" className="font-bold">
-              面交校區
-            </label>
-            <select
-              id="campus-select"
-              value={campus}
-              onChange={(e) => {
-                const nextCampus = e.target.value;
-                setCampus(nextCampus);
-                const details = CAMPUS_LOCATIONS[nextCampus];
-                setDetailLocation(details ? details[0] : "其他");
-                setCustomLocation("");
-              }}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
-            >
-              <option value="英才校區">英才校區</option>
-              <option value="民生校區">民生校區</option>
-              <option value="宿舍">宿舍</option>
-              <option value="其他">其他</option>
-            </select>
-          </div>
-          {campus !== "其他" ? (
-            <div>
-              <label htmlFor="detail-select" className="font-bold">
-                面交大樓/特定地點
-              </label>
-              <select
-                id="detail-select"
-                value={detailLocation}
-                onChange={(e) => {
-                  setDetailLocation(e.target.value);
-                  setCustomLocation("");
-                }}
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
-              >
-                {CAMPUS_LOCATIONS[campus]?.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
-          <div>
-            <label htmlFor="custom-location" className="font-bold">
-              {campus === "其他" ? "具體位置描述 / 地址" : "詳細位置 (如：3樓電梯前)"}
-            </label>
-            <input
-              id="custom-location"
-              type="text"
-              required={campus === "其他" || detailLocation === "其他"}
-              value={customLocation}
-              onChange={(e) => setCustomLocation(e.target.value)}
-              placeholder={campus === "其他" ? "請輸入完整地址或位置" : "例如：3樓電梯前"}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
-              aria-invalid={fieldErrors.location ? "true" : "false"}
-              aria-describedby={fieldErrors.location ? "location-error" : undefined}
-            />
-          </div>
-          {fieldErrors.location ? <p id="location-error" className="sm:col-span-3 mt-2 text-sm font-semibold text-campus-red">{fieldErrors.location}</p> : null}
+        <div className="sm:col-span-2">
+          <InteractiveCampusPicker
+            campus={campus}
+            setCampus={setCampus}
+            detailLocation={detailLocation}
+            setDetailLocation={setDetailLocation}
+            customLocation={customLocation}
+            setCustomLocation={setCustomLocation}
+            mapPoint={mapPoint}
+            setMapPoint={setMapPoint}
+            fieldError={fieldErrors.location}
+          />
         </div>
         <div>
           <label htmlFor="exchange-mode" className="font-bold">

@@ -1,8 +1,8 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { CampusMapPicker } from "@/components/location/campus-map-picker";
+import { InteractiveCampusPicker } from "@/components/location/interactive-campus-picker";
 import { describedBy } from "@/lib/a11y";
 import type { MapCoordinate } from "@/lib/marketplace/domain/models";
 import {
@@ -34,7 +34,6 @@ type ItemFormInitialValues = {
   conditionLabel: string;
   location: string;
   quantity: string;
-  mapPoint?: MapCoordinate;
   exchangeMode: ExchangeMode;
   exchangeValue: string;
   description: string;
@@ -64,9 +63,30 @@ export function ItemForm({
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? categories[0]?.id ?? "");
   const [conditionLabel, setConditionLabel] = useState<string>(initialValues?.conditionLabel ?? MARKETPLACE_CONDITION_OPTIONS[0]);
-  const [location, setLocation] = useState(initialValues?.location ?? "");
-  const [quantity, setQuantity] = useState(initialValues?.quantity ?? "1");
+
+  // Parse location string for two-level select
+  const parsedLoc = useMemo(() => {
+    const locString = initialValues?.location ?? "";
+    const parts = locString.split(" - ");
+    if (parts[0] === "英才校區" || parts[0] === "民生校區" || parts[0] === "宿舍") {
+      const campus = parts[0];
+      const detail = parts[1] || "其他";
+      // We don't need strict validation here, just parsing
+      const custom = parts.slice(2).join(" - ") || (detail === "其他" ? parts.slice(1).join(" - ") : "");
+      return { campus, detail, custom };
+    }
+    if (locString === "英才校區" || locString === "民生校區" || locString === "宿舍") {
+      return { campus: locString, detail: "其他", custom: "" };
+    }
+    return { campus: "其他", detail: "其他", custom: locString };
+  }, [initialValues?.location]);
+
+  const [campus, setCampus] = useState(parsedLoc.campus);
+  const [detailLocation, setDetailLocation] = useState(parsedLoc.detail);
+  const [customLocation, setCustomLocation] = useState(parsedLoc.custom);
   const [mapPoint, setMapPoint] = useState<MapCoordinate | undefined>(initialValues?.mapPoint);
+
+  const [quantity, setQuantity] = useState(initialValues?.quantity ?? "1");
   const [exchangeMode, setExchangeMode] = useState<ExchangeMode>(initialValues?.exchangeMode ?? "price");
   const [exchangeValue, setExchangeValue] = useState(initialValues?.exchangeValue ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
@@ -125,11 +145,21 @@ export function ItemForm({
     setFieldErrors({});
 
     try {
+      let combinedLocation = "";
+      if (campus === "其他") {
+        combinedLocation = customLocation.trim();
+      } else if (detailLocation === "其他") {
+        combinedLocation = `${campus} - ${customLocation.trim()}`;
+      } else {
+        const trimmedCustom = customLocation.trim();
+        combinedLocation = trimmedCustom ? `${campus} - ${detailLocation} - ${trimmedCustom}` : `${campus} - ${detailLocation}`;
+      }
+
       const formData = new FormData();
       formData.set("title", title);
       formData.set("categoryId", categoryId);
       formData.set("conditionLabel", conditionLabel);
-      formData.set("location", location);
+      formData.set("location", combinedLocation);
       formData.set("quantity", quantity);
       if (mapPoint) {
         formData.set("locationX", String(mapPoint.x));
@@ -397,23 +427,17 @@ export function ItemForm({
           {fieldErrors.quantity ? <p className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.quantity}</p> : null}
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor="location" className="font-bold">
-            面交地點
-          </label>
-          <input
-            id="location"
-            name="location"
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-            placeholder="例如：圖書館一樓、宿舍大廳"
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
-            aria-invalid={fieldErrors.location ? "true" : "false"}
-            aria-describedby={fieldErrors.location ? describedBy("location", true) : undefined}
+          <InteractiveCampusPicker
+            campus={campus}
+            setCampus={setCampus}
+            detailLocation={detailLocation}
+            setDetailLocation={setDetailLocation}
+            customLocation={customLocation}
+            setCustomLocation={setCustomLocation}
+            mapPoint={mapPoint}
+            setMapPoint={setMapPoint}
+            fieldError={fieldErrors.location}
           />
-          {fieldErrors.location ? <p id="location-error" className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.location}</p> : null}
-        </div>
-        <div className="sm:col-span-2">
-          <CampusMapPicker value={mapPoint} onChange={setMapPoint} />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="description" className="font-bold">
