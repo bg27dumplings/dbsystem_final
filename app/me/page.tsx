@@ -7,15 +7,21 @@ import {
   findChatRoomsByStudentId,
   findStudentProfileById
 } from "@/lib/marketplace/queries";
-import { MessageSquare, CalendarRange, ArrowRight, Settings } from "lucide-react";
+import { findReviewsForStudent } from "@/lib/marketplace/infrastructure/review-repository";
+import { MessageSquare, CalendarRange, ArrowRight, Settings, Star } from "lucide-react";
+import { StarRating } from "@/components/reviews/star-rating";
 
 export default async function MeOverviewPage() {
   const session = await requireStudentSession("/me");
-  const [profile, appointments, chatRooms] = await Promise.all([
+  const [profile, appointments, chatRooms, reviews] = await Promise.all([
     findStudentProfileById(session.studentId),
     findAppointmentsByStudentId(session.studentId),
-    findChatRoomsByStudentId(session.studentId)
+    findChatRoomsByStudentId(session.studentId),
+    findReviewsForStudent(session.studentId)
   ]);
+
+  const buyerReviews = reviews.filter((r) => r.role === "buyer");
+  const sellerReviews = reviews.filter((r) => r.role === "seller");
 
   const activeAppointments = appointments
     .filter((a) => ["pending", "accepted"].includes(a.status))
@@ -126,6 +132,70 @@ export default async function MeOverviewPage() {
             找不到個人資料
           </div>
         )}
+      </section>
+
+      {/* 我的評價 */}
+      <section aria-labelledby="my-reviews-heading" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-campus-ink/10 md:col-span-2">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 id="my-reviews-heading" className="flex items-center gap-2 text-xl font-black text-campus-ink">
+              <Star className="text-campus-gold" />
+              收到的評價
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">檢視其他同學給您的交易評價。</p>
+          </div>
+          <Link href={`/profile/${session.studentId}`} className="text-sm font-bold text-campus-moss hover:text-campus-ink transition-colors flex items-center gap-1">
+            預覽公開頁面 <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <h3 className="mb-4 text-sm font-bold text-slate-700 border-b pb-2">做為賣家 ({sellerReviews.length})</h3>
+            {sellerReviews.length > 0 ? (
+              <div className="space-y-3">
+                {sellerReviews.map((review) => (
+                  <div key={review.id} className="rounded-lg bg-slate-50 p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="text-sm font-bold">{review.reviewerName}</p>
+                        <p className="text-xs text-slate-500">購買：{review.itemTitle}</p>
+                      </div>
+                      <StarRating value={review.rating} readonly />
+                    </div>
+                    <p className="text-sm text-slate-700">{review.comment}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-slate-200 p-4 text-center text-sm text-slate-500">
+                尚無賣家評價
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="mb-4 text-sm font-bold text-slate-700 border-b pb-2">做為買家 ({buyerReviews.length})</h3>
+            {buyerReviews.length > 0 ? (
+              <div className="space-y-3">
+                {buyerReviews.map((review) => (
+                  <div key={review.id} className="rounded-lg bg-slate-50 p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="text-sm font-bold">{review.reviewerName}</p>
+                        <p className="text-xs text-slate-500">出售：{review.itemTitle}</p>
+                      </div>
+                      <StarRating value={review.rating} readonly />
+                    </div>
+                    <p className="text-sm text-slate-700">{review.comment}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-slate-200 p-4 text-center text-sm text-slate-500">
+                尚無買家評價
+              </div>
+            )}
+          </div>
+        </div>
       </section>
     </div>
   );

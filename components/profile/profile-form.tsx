@@ -19,12 +19,14 @@ export function ProfileForm({ profile }: { profile: StudentProfile }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const [name, setName] = useState(profile.name);
+  const [email, setEmail] = useState(profile.email);
   const [bio, setBio] = useState(profile.bio);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   
   const [formError, setFormError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<{ bio?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; bio?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   
@@ -57,6 +59,8 @@ export function ProfileForm({ profile }: { profile: StudentProfile }) {
 
     try {
       const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
       formData.append("bio", bio);
       if (avatarUrl && !avatarFile) {
         formData.append("avatarUrl", avatarUrl);
@@ -73,7 +77,7 @@ export function ProfileForm({ profile }: { profile: StudentProfile }) {
       const result = (await response.json()) as {
         ok: boolean;
         formError?: string;
-        fieldErrors?: { bio?: string };
+        fieldErrors?: { name?: string; email?: string; bio?: string };
       };
 
       if (!response.ok || !result.ok) {
@@ -170,27 +174,42 @@ export function ProfileForm({ profile }: { profile: StudentProfile }) {
         </div>
       </div>
 
-      <dl className="grid gap-3 rounded-lg bg-campus-paper p-4 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="font-black">姓名</dt>
-          <dd>{profile.name}</dd>
+      <div className="grid gap-4 rounded-lg bg-campus-paper p-4 text-sm sm:grid-cols-2">
+        <div className="space-y-1">
+          <label htmlFor="name" className="font-black block">姓名</label>
+          <input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-campus-moss focus:ring-1 focus:ring-campus-moss"
+          />
+          {fieldErrors.name && <p className="text-xs text-campus-red font-semibold">{fieldErrors.name}</p>}
         </div>
-        <div>
-          <dt className="font-black">學號</dt>
-          <dd>{profile.studentNo}</dd>
+        <div className="space-y-1">
+          <span className="font-black block">學號 (不可修改)</span>
+          <div className="px-3 py-2 text-slate-500 bg-slate-100 rounded-md border border-slate-200">
+            {profile.studentNo}
+          </div>
         </div>
-        <div className="sm:col-span-2">
-          <dt className="font-black">信箱</dt>
-          <dd>{profile.email}</dd>
+        <div className="sm:col-span-2 space-y-1">
+          <label htmlFor="email" className="font-black block">信箱</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-campus-moss focus:ring-1 focus:ring-campus-moss"
+          />
+          {fieldErrors.email && <p className="text-xs text-campus-red font-semibold">{fieldErrors.email}</p>}
         </div>
-        <div className="sm:col-span-2">
-          <dt className="font-black">累積評價</dt>
-          <dd className="mt-1 flex flex-wrap items-center gap-2">
-            <StarRating value={profile.rating.averageRating} readonly />
+        <div className="sm:col-span-2 mt-2">
+          <span className="font-black block">累積評價</span>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <StarRating value={profile.rating.averageRating} readonly showScore={false} />
             <span className="text-sm text-slate-700">（{profile.rating.reviewCount} 則評價）</span>
-          </dd>
+          </div>
         </div>
-      </dl>
+      </div>
       <div>
         <label htmlFor="bio" className="font-bold">
           個人簡介

@@ -23,6 +23,18 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
     );
   }
 
+  if (item.status === "completed") {
+    return (
+      <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-campus-ink/10">
+        <h1 className="text-2xl font-black text-campus-ink">交易已完成</h1>
+        <p className="mt-3 text-slate-700">此物品已完成面交交易，無法再修改內容。</p>
+        <Link href="/me/items" className="mt-4 inline-flex min-h-12 items-center justify-center rounded-md bg-campus-moss px-4 py-3 font-black text-white hover:bg-campus-ink">
+          回到我的物品
+        </Link>
+      </section>
+    );
+  }
+
   const exchangeMode =
     item.exchangeMode === "custom" ? "price" : (item.exchangeMode as "price" | "treat_drink" | "treat_food" | "free");
 

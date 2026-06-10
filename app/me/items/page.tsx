@@ -23,7 +23,7 @@ export default async function MyItemsPage({
           <h2 id="my-items-heading" className="text-xl font-black text-campus-ink">我的物品</h2>
           <p className="mt-1 text-sm text-slate-700">管理您上架的物品，隨時更新狀態或新增項目。</p>
         </div>
-        <Link href="/me/items/new" className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-md bg-campus-gold px-4 py-3 font-black text-white">新增物品</Link>
+        <Link href="/items/new" className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-md bg-campus-gold px-4 py-3 font-black text-white">新增物品</Link>
       </div>
       {created ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status">
@@ -67,7 +67,7 @@ export default async function MyItemsPage({
           title="目前沒有任何物品"
           description="開始整理不需要的物資，發布第一件物品吧！"
           actionLabel="新增物品"
-          actionHref="/me/items/new"
+          actionHref="/items/new"
         />
       )}
     </section>

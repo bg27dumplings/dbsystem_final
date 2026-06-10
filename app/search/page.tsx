@@ -1,7 +1,8 @@
 import { EmptyState } from "@/components/empty-state";
 import { FilterPanel } from "@/components/filter-panel";
 import { ItemCard } from "@/components/item-card";
-import { findActiveCategories, findPublicItems } from "@/lib/marketplace/queries";
+import { findActiveCategories, findPublicItems, findStudentWishlist } from "@/lib/marketplace/queries";
+import { getStudentSession } from "@/lib/auth/student-session";
 
 export default async function SearchPage({
   searchParams
@@ -20,7 +21,13 @@ export default async function SearchPage({
     minPrice: params?.minPrice,
     maxPrice: params?.maxPrice
   };
-  const [categories, items] = await Promise.all([findActiveCategories(), findPublicItems(filters)]);
+  const session = await getStudentSession();
+  const [categories, items, wishlistIds] = await Promise.all([
+    findActiveCategories(), 
+    findPublicItems(filters),
+    session ? findStudentWishlist(session.studentId) : Promise.resolve([])
+  ]);
+  const wishlistSet = new Set(wishlistIds);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
@@ -38,7 +45,7 @@ export default async function SearchPage({
         {items.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
             {items.map((item) => (
-              <ItemCard key={item.id} item={item} />
+              <ItemCard key={item.id} item={item} isWished={wishlistSet.has(item.id)} />
             ))}
           </div>
         ) : (

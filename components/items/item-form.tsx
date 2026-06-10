@@ -10,7 +10,7 @@ import {
   MARKETPLACE_EXCHANGE_MODE_LABELS
 } from "@/lib/marketplace/domain/constants";
 import type { CreateMarketplaceItemFieldErrors } from "@/lib/marketplace/domain/create-item";
-import type { MarketplaceCategory } from "@/lib/marketplace/types";
+import type { MarketplaceCategory, MarketplaceItem } from "@/lib/marketplace/types";
 
 type CreateItemResponse = {
   ok: boolean;
@@ -63,21 +63,24 @@ export function ItemForm({
   const isEdit = mode === "edit" && initialValues;
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? categories[0]?.id ?? "");
-  const [conditionLabel, setConditionLabel] = useState<string>(initialValues?.conditionLabel ?? MARKETPLACE_CONDITION_OPTIONS[0]);
+  const [conditionLabel, setConditionLabel] = useState<MarketplaceItem["condition"]>((initialValues?.conditionLabel as MarketplaceItem["condition"]) ?? "全新");
 
   // Parse location string for two-level select
   const parsedLoc = useMemo(() => {
     const locString = initialValues?.location ?? "";
     const parts = locString.split(" - ");
-    if (parts[0] === "英才校區" || parts[0] === "民生校區" || parts[0] === "宿舍") {
+    if (parts[0] === "英才校區" || parts[0] === "民生校區") {
       const campus = parts[0];
       const detail = parts[1] || "其他";
-      // We don't need strict validation here, just parsing
-      const custom = parts.slice(2).join(" - ") || (detail === "其他" ? parts.slice(1).join(" - ") : "");
+      const custom = parts.slice(2).join(" - ");
       return { campus, detail, custom };
+    } else if (parts[0] === "宿舍") {
+      const detail = parts[1] || "其他";
+      const custom = parts.slice(2).join(" - ");
+      return { campus: "民生校區", detail, custom };
     }
     if (locString === "英才校區" || locString === "民生校區" || locString === "宿舍") {
-      return { campus: locString, detail: "其他", custom: "" };
+      return { campus: locString === "宿舍" ? "民生校區" : locString, detail: "其他", custom: "" };
     }
     return { campus: "其他", detail: "其他", custom: locString };
   }, [initialValues?.location]);
@@ -138,6 +141,8 @@ export function ItemForm({
   function removeImage(index: number) {
     setImagePreviews((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
+  
+  const conditionIndex = Math.max(0, MARKETPLACE_CONDITION_OPTIONS.indexOf(conditionLabel as any));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -183,13 +188,12 @@ export function ItemForm({
 
       const result = (await response.json()) as CreateItemResponse;
       if (!response.ok || !result.ok) {
-        setFormError(result.formError ?? (isEdit ? "物品更新失敗，請稍後再試。" : "物品建立失敗，請稍後再試。"));
-        setFieldErrors(result.fieldErrors ?? {});
+        setFormError(result.formError ?? "儲存失敗，請檢查輸入內容。");
+        if (result.fieldErrors) setFieldErrors(result.fieldErrors);
         return;
       }
 
-      router.push(result.redirectTo ?? "/me/items");
-      router.refresh();
+      window.location.assign(result.redirectTo ?? "/me/items");
     } catch {
       setFormError("系統忙碌中，請稍後再試。");
     } finally {
@@ -293,24 +297,27 @@ export function ItemForm({
           {fieldErrors.categoryId ? <p id="category-error" className="mt-2 text-sm font-semibold text-campus-red">{fieldErrors.categoryId}</p> : null}
         </div>
         <div>
-          <label htmlFor="condition" className="font-bold">
-            新舊程度
+          <label htmlFor="condition" className="font-bold flex items-center justify-between">
+            <span>新舊程度</span>
+            <span className="text-sm font-black text-campus-moss bg-campus-moss/10 px-2 py-0.5 rounded-full">{conditionLabel || MARKETPLACE_CONDITION_OPTIONS[0]}</span>
           </label>
-          <select
-            id="condition"
-            name="conditionLabel"
-            value={conditionLabel}
-            onChange={(event) => setConditionLabel(event.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
-            aria-invalid={fieldErrors.conditionLabel ? "true" : "false"}
-            aria-describedby={fieldErrors.conditionLabel ? describedBy("condition", true) : undefined}
-          >
-            {MARKETPLACE_CONDITION_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+          <div className="mt-4 px-2">
+            <input
+              id="condition"
+              type="range"
+              min="0"
+              max={MARKETPLACE_CONDITION_OPTIONS.length - 1}
+              step="1"
+              value={conditionIndex}
+              onChange={(e) => setConditionLabel(MARKETPLACE_CONDITION_OPTIONS[Number(e.target.value)] as MarketplaceItem["condition"])}
+              className="w-full accent-campus-moss"
+              aria-invalid={fieldErrors.conditionLabel ? "true" : "false"}
+            />
+            <div className="mt-2 flex justify-between text-xs font-bold text-slate-400">
+              <span>{MARKETPLACE_CONDITION_OPTIONS[0]}</span>
+              <span>{MARKETPLACE_CONDITION_OPTIONS[MARKETPLACE_CONDITION_OPTIONS.length - 1]}</span>
+            </div>
+          </div>
           {fieldErrors.conditionLabel ? (
             <p id="condition-error" className="mt-2 text-sm font-semibold text-campus-red">
               {fieldErrors.conditionLabel}

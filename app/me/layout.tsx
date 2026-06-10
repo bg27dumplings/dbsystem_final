@@ -40,7 +40,7 @@ export default async function MeLayout({ children }: { children: React.ReactNode
               <div className="flex flex-col items-center justify-center text-center">
                 <span className="text-2xl font-black">{profile?.rating.averageRating.toFixed(1) ?? "0.0"}</span>
                 <div className="flex text-yellow-400">
-                  <StarRating value={profile?.rating.averageRating ?? 0} readonly />
+                  <StarRating value={profile?.rating.averageRating ?? 0} readonly showScore={false} />
                 </div>
                 <span className="mt-1 text-xs text-white/80">{profile?.rating.reviewCount ?? 0} 則評價</span>
               </div>
@@ -70,19 +70,14 @@ export default async function MeLayout({ children }: { children: React.ReactNode
           <div className="flex flex-col items-center justify-center p-4 text-center">
             <MessageCircle className="mb-2 text-campus-moss" size={24} />
             <div className="relative">
-              <span className="text-2xl font-black text-campus-ink">-</span>
-              {unreadChatCount > 0 && (
-                <span className="absolute -right-3 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
-                  {unreadChatCount}
-                </span>
-              )}
+              <span className="text-2xl font-black text-campus-ink">{unreadChatCount}</span>
             </div>
             <span className="text-xs font-bold text-slate-500">未讀訊息</span>
           </div>
         </div>
       </section>
 
-      <MeSubnav />
+      <MeSubnav unreadChatCount={unreadChatCount} unreadAppointmentCount={unreadAppointmentCount} />
       
       <main>
         {children}

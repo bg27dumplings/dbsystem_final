@@ -20,18 +20,22 @@ export default async function MyAppointmentsPage({
 
   return (
     <section aria-labelledby="appointments-heading" className="space-y-4">
-      <div className="flex space-x-2 border-b border-campus-ink/10 pb-2">
+      <div className="flex border-b border-campus-ink/10">
         <Link
           href="/me/appointments?tab=buyer"
-          className={`rounded-full px-4 py-1.5 text-sm font-bold ${tab === "buyer" ? "bg-campus-ink text-white" : "text-campus-ink hover:bg-campus-paper"}`}
+          className={`flex-1 py-3 text-center font-black border-b-2 text-sm transition-colors ${
+            tab === "buyer" ? "border-campus-moss text-campus-moss" : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
         >
-          我是買家
+          買家預約
         </Link>
         <Link
           href="/me/appointments?tab=seller"
-          className={`rounded-full px-4 py-1.5 text-sm font-bold ${tab === "seller" ? "bg-campus-ink text-white" : "text-campus-ink hover:bg-campus-paper"}`}
+          className={`flex-1 py-3 text-center font-black border-b-2 text-sm transition-colors ${
+            tab === "seller" ? "border-campus-moss text-campus-moss" : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
         >
-          我是賣家
+          賣家預約
         </Link>
       </div>
 

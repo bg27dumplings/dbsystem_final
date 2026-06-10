@@ -22,7 +22,7 @@ export default async function ChatPage({
   const sellUnread = sellRooms.reduce((acc, curr) => acc + curr.unreadCount, 0);
 
   return (
-    <section aria-labelledby="chat-heading" className="space-y-4 max-w-3xl mx-auto">
+    <section aria-labelledby="chat-heading" className="space-y-4">
 
       <div className="flex border-b border-campus-ink/10">
         <Link

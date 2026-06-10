@@ -2,7 +2,8 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { FilterPanel } from "@/components/filter-panel";
 import { ItemCard } from "@/components/item-card";
-import { findActiveCategories, findPublicItems } from "@/lib/marketplace/queries";
+import { findActiveCategories, findPublicItems, findStudentWishlist } from "@/lib/marketplace/queries";
+import { getStudentSession } from "@/lib/auth/student-session";
 
 export default async function HomePage({
   searchParams
@@ -21,7 +22,13 @@ export default async function HomePage({
     minPrice: params?.minPrice,
     maxPrice: params?.maxPrice
   };
-  const [categories, items] = await Promise.all([findActiveCategories(), findPublicItems(filters)]);
+  const session = await getStudentSession();
+  const [categories, items, wishlistIds] = await Promise.all([
+    findActiveCategories(), 
+    findPublicItems(filters),
+    session ? findStudentWishlist(session.studentId) : Promise.resolve([])
+  ]);
+  const wishlistSet = new Set(wishlistIds);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
@@ -40,7 +47,7 @@ export default async function HomePage({
                 瀏覽同學上架的課本、3C 與宿舍用品。訪客可以先看，想私聊或預約面交時再登入。
               </p>
             </div>
-            <Link href="/me/items/new" className="inline-flex min-h-12 items-center justify-center rounded-md bg-campus-gold px-5 py-3 font-black text-white hover:bg-campus-ink">
+            <Link href="/items/new" className="inline-flex min-h-12 items-center justify-center rounded-md bg-campus-gold px-5 py-3 font-black text-white hover:bg-campus-ink">
               立即上架
             </Link>
           </div>
@@ -51,7 +58,7 @@ export default async function HomePage({
         {items.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {items.map((item) => (
-              <ItemCard key={item.id} item={item} />
+              <ItemCard key={item.id} item={item} isWished={wishlistSet.has(item.id)} />
             ))}
           </div>
         ) : (
@@ -59,7 +66,7 @@ export default async function HomePage({
             title="目前還沒有上架物品"
             description="現在資料庫裡還沒有任何公開物品。等第一位同學完成上架後，這裡才會顯示真實內容。"
             actionLabel="前往上架頁"
-            actionHref="/me/items/new"
+            actionHref="/items/new"
           />
         )}
       </section>
