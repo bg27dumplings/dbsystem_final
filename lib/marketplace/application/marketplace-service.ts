@@ -3,7 +3,9 @@ import {
   findMarketplaceItemById,
   findMarketplaceItemsByStudentId,
   findOwnedMarketplaceItemById,
-  findPublicMarketplaceItems
+  findPublicMarketplaceItems,
+  findStudentWishlistIds,
+  findStudentWishlistItems
 } from "@/lib/marketplace/infrastructure/item-repository";
 import {
   countPendingAppointmentsForStudent,
@@ -32,6 +34,14 @@ export async function findItemsByStudentId(studentId: number) {
 
 export async function findOwnedItemById(studentId: number, itemId: string) {
   return findOwnedMarketplaceItemById(studentId, itemId);
+}
+
+export async function findStudentWishlist(studentId: number) {
+  return findStudentWishlistIds(studentId);
+}
+
+export async function findStudentWishlistItemsService(studentId: number) {
+  return findStudentWishlistItems(studentId);
 }
 
 

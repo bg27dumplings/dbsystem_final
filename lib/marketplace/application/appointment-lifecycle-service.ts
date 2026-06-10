@@ -4,7 +4,7 @@ import { getDbPool } from "@/lib/db";
 import { formatDateTime } from "@/lib/marketplace/domain/mappers";
 import { findAppointmentRecordById } from "@/lib/marketplace/infrastructure/appointment-repository";
 import {
-  markItemsRemovedWhenFullyCompleted,
+  markItemsCompletedWhenFullyCompleted,
   rejectRemainingPendingWhenFull,
   syncItemVisibility
 } from "@/lib/marketplace/application/item-availability-service";
@@ -62,7 +62,7 @@ export async function syncAppointmentLifecycle() {
     );
 
     await completeExpiredAcceptedAppointments(connection);
-    await markItemsRemovedWhenFullyCompleted(connection);
+    await markItemsCompletedWhenFullyCompleted(connection);
 
     const affectedItemIds = [...new Set(expiredRows.map((row) => row.item_id))];
     for (const itemId of affectedItemIds) {

@@ -1,7 +1,7 @@
 import "server-only";
 import { RowDataPacket } from "mysql2";
 import { getDbPool } from "@/lib/db";
-import { mapChatRoomDetail, mapChatRoomSummary } from "@/lib/marketplace/domain/mappers";
+import { mapChatRoomSummary } from "@/lib/marketplace/domain/mappers";
 
 type ChatRoomRow = RowDataPacket & {
   id: number;
@@ -74,8 +74,8 @@ export async function findStudentChatRoomById(studentId: number, roomId: string)
     [roomId, studentId]
   );
 
-  const [roomRows] = await pool.execute<(RowDataPacket & { id: number; item_title: string; counterpart_name: string; counterpart_avatar_url: string | null })[]>(
-    `SELECT cr.id, i.title AS item_title,
+  const [roomRows] = await pool.execute<(RowDataPacket & { id: string; item_id: number; item_title: string; counterpart_name: string; counterpart_avatar_url: string | null })[]>(
+    `SELECT cr.id, cr.item_id, i.title AS item_title,
             CASE WHEN cr.buyer_id = ? THEN seller.name ELSE buyer.name END AS counterpart_name,
             CASE WHEN cr.buyer_id = ? THEN seller.avatar_url ELSE buyer.avatar_url END AS counterpart_avatar_url
      FROM chat_rooms cr
@@ -100,7 +100,30 @@ export async function findStudentChatRoomById(studentId: number, roomId: string)
     [roomId]
   );
 
-  return mapChatRoomDetail(room.id, room.item_title, room.counterpart_name, room.counterpart_avatar_url, studentId, messageRows);
+  return {
+    roomId: String(room.id),
+    itemId: room.item_id,
+    itemTitle: room.item_title,
+    counterpartName: room.counterpart_name,
+    counterpartAvatarUrl: room.counterpart_avatar_url ?? undefined,
+    studentId,
+    messages: messageRows.map((row) => {
+      const dateObj = row.created_at instanceof Date ? row.created_at : new Date(row.created_at);
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const dd = String(dateObj.getDate()).padStart(2, "0");
+      const hh = String(dateObj.getHours()).padStart(2, "0");
+      const min = String(dateObj.getMinutes()).padStart(2, "0");
+
+      return {
+        id: String(row.id),
+        body: row.body,
+        time: `${yyyy}-${mm}-${dd} ${hh}:${min}`,
+        isMine: row.sender_id === studentId,
+        messageType: row.message_type
+      };
+    })
+  };
 }
 
 export async function countUnreadChatMessages(studentId: number): Promise<number> {

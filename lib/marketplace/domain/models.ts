@@ -1,4 +1,4 @@
-export type ItemStatus = "active" | "hidden" | "reserved" | "removed" | "violation_removed" | "deleted";
+export type ItemStatus = "active" | "hidden" | "reserved" | "removed" | "completed" | "violation_removed" | "deleted";
 
 export type MapCoordinate = {
   x: number;

@@ -39,14 +39,28 @@ export async function findStudentProfile(studentId: number): Promise<StudentProf
   };
 }
 
-export async function updateStudentProfile(studentId: number, bio: string, avatarUrl: string | null) {
+export async function updateStudentProfile(
+  studentId: number,
+  name: string,
+  email: string,
+  bio: string,
+  avatarUrl: string | null
+) {
   const pool = getDbPool();
-  await pool.execute(
-    `UPDATE students
-     SET bio = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?`,
-    [bio, avatarUrl, studentId]
-  );
+  try {
+    await pool.execute(
+      `UPDATE students
+       SET name = ?, email = ?, bio = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [name, email, bio, avatarUrl, studentId]
+    );
+    return { ok: true };
+  } catch (error: any) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return { ok: false, error: "email_taken" };
+    }
+    throw error;
+  }
 }
 
 export async function findPublicStudentProfile(studentId: number) {

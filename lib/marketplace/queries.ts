@@ -9,6 +9,8 @@ export {
   findItemsByStudentId,
   findOwnedItemById,
   findPublicItems,
+  findStudentWishlist,
+  findStudentWishlistItemsService as findStudentWishlistItems,
   countUnreadChatMessages,
   countUnreadAppointments,
   findPendingAppointmentCount,
