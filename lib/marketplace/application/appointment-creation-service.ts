@@ -164,10 +164,8 @@ export async function createAppointment(input: {
 
     revalidatePath("/me/appointments");
     revalidatePath(`/me/appointments/${appointmentId}`);
-    revalidatePath("/appointments");
-    revalidatePath(`/appointments/${appointmentId}`);
-    revalidatePath("/chat");
-    revalidatePath(`/chat/${roomId}`);
+    revalidatePath("/me/chat");
+    revalidatePath(`/me/chat/${roomId}`);
 
     return {
       ok: true,

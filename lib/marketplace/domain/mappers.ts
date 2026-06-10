@@ -23,6 +23,7 @@ type MarketplaceItemExtras = {
   categoryId?: string;
   sellerId?: string;
   sellerBio?: string;
+  sellerAvatarUrl?: string;
   sellerRating?: MarketplaceItem["sellerRating"];
 };
 
@@ -42,14 +43,22 @@ type AppointmentRowShape = {
   status: AppointmentSummary["status"];
   item_title: string;
   buyer_name: string;
+  buyer_avatar_url?: string | null;
   seller_name: string;
+  seller_avatar_url?: string | null;
+  image_url?: string | null;
+  buyer_unread?: number;
+  seller_unread?: number;
 };
 
 type ChatRoomRowShape = {
   id: number;
   item_title: string;
   counterpart_name: string;
+  counterpart_avatar_url?: string | null;
   last_message: string | null;
+  is_seller: number | boolean;
+  unread_count: number;
 };
 
 type ChatMessageRowShape = {
@@ -99,8 +108,9 @@ export function mapMarketplaceItem(row: ItemRowShape, images: string[] = [], ext
     quantity: Number(row.quantity ?? 1),
     mapPoint: toMapCoordinate(row.location_x, row.location_y),
     seller: row.seller_name,
-    sellerId: extras.sellerId,
+    sellerId: extras.sellerId ?? "0",
     sellerBio: extras.sellerBio,
+    sellerAvatarUrl: extras.sellerAvatarUrl,
     sellerRating: extras.sellerRating,
     status: row.status,
     originalPrice: Number(row.original_price),
@@ -130,8 +140,10 @@ export function mapAppointmentSummary(row: AppointmentRowShape, viewerStudentId?
     itemTitle: row.item_title,
     buyer: row.buyer_name,
     buyerId: String(row.buyer_id),
+    buyerAvatarUrl: row.buyer_avatar_url ?? undefined,
     seller: row.seller_name,
     sellerId: String(row.seller_id),
+    sellerAvatarUrl: row.seller_avatar_url ?? undefined,
     time: formatDateTime(row.meetup_at),
     meetupAt: Number.isNaN(meetupDate.getTime()) ? String(row.meetup_at) : meetupDate.toISOString(),
     location: row.location,
@@ -141,7 +153,9 @@ export function mapAppointmentSummary(row: AppointmentRowShape, viewerStudentId?
     exchangeLabel: exchange.exchangeLabel,
     exchangeValue: exchange.exchangeValue,
     note: row.note ?? undefined,
-    viewerRole: viewerStudentId === row.seller_id ? "seller" : "buyer"
+    viewerRole: viewerStudentId === row.seller_id ? "seller" : "buyer",
+    imageUrl: row.image_url ?? undefined,
+    hasUnreadUpdates: viewerStudentId === row.seller_id ? row.seller_unread === 1 : row.buyer_unread === 1
   };
 }
 
@@ -150,19 +164,26 @@ export function mapChatRoomSummary(row: ChatRoomRowShape): ChatRoomSummary {
     id: String(row.id),
     itemTitle: row.item_title,
     counterpartName: row.counterpart_name,
-    lastMessage: row.last_message?.trim() || "目前尚無訊息。"
+    counterpartAvatarUrl: row.counterpart_avatar_url ?? undefined,
+    lastMessage: row.last_message?.trim() || "尚無訊息",
+    isSeller: Boolean(row.is_seller),
+    unreadCount: Number(row.unread_count)
   };
 }
 
 export function mapChatRoomDetail(
   roomId: number,
   itemTitle: string,
+  counterpartName: string,
+  counterpartAvatarUrl: string | null | undefined,
   studentId: number,
   messages: ChatMessageRowShape[]
 ): ChatRoomDetail {
   return {
     roomId: String(roomId),
     itemTitle,
+    counterpartName,
+    counterpartAvatarUrl: counterpartAvatarUrl ?? undefined,
     messages: messages.map((row) => ({
       id: String(row.id),
       body: row.body,

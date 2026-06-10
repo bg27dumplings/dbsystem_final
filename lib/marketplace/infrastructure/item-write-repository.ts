@@ -27,18 +27,7 @@ type CreateMarketplaceItemImageRecordInput = {
   isPrimary: boolean;
 };
 
-type UpdateMarketplaceItemRecordInput = {
-  itemId: number;
-  studentId: number;
-  categoryId: number;
-  title: string;
-  description: string;
-  exchangeNote: string;
-  conditionLabel: string;
-  location: string;
-  originalPrice: number;
-  salePrice: number | null;
-};
+
 
 type UpdateMarketplaceItemStatusInput = {
   itemId: number;
@@ -115,35 +104,7 @@ export async function insertMarketplaceItemImage(
   return result.insertId;
 }
 
-export async function updateMarketplaceItem(
-  connection: mysql.PoolConnection,
-  input: UpdateMarketplaceItemRecordInput
-) {
-  await connection.execute(
-    `UPDATE items
-     SET category_id = ?,
-         title = ?,
-         description = ?,
-         exchange_note = ?,
-         condition_label = ?,
-         location = ?,
-         original_price = ?,
-         sale_price = ?
-     WHERE id = ? AND student_id = ?`,
-    [
-      input.categoryId,
-      input.title,
-      input.description,
-      input.exchangeNote,
-      input.conditionLabel,
-      input.location,
-      input.originalPrice,
-      input.salePrice,
-      input.itemId,
-      input.studentId
-    ]
-  );
-}
+
 
 export async function deleteMarketplaceItemImagesByIds(
   connection: mysql.PoolConnection,

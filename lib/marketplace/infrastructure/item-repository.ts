@@ -24,6 +24,7 @@ type ItemRow = RowDataPacket & {
   student_id: number;
   seller_name: string;
   seller_bio: string | null;
+  seller_avatar_url: string | null;
   image_url: string | null;
 };
 
@@ -57,7 +58,7 @@ export type MarketplaceItemActionContext = {
 
 const SELECT_ITEM_FIELDS = `SELECT i.id, i.title, i.description, i.exchange_note, i.condition_label, i.location,
         i.quantity, i.location_x, i.location_y, i.original_price, i.sale_price, i.status, i.category_id, i.student_id,
-        c.name AS category_name, s.name AS seller_name, s.bio AS seller_bio, img.public_url AS image_url
+        c.name AS category_name, s.name AS seller_name, s.bio AS seller_bio, s.avatar_url AS seller_avatar_url, img.public_url AS image_url
  FROM items i
  JOIN categories c ON c.id = i.category_id
  JOIN students s ON s.id = i.student_id
@@ -104,6 +105,7 @@ async function mapRowsToItems(rows: ItemRow[], includeSellerRating = false) {
       categoryId: String(row.category_id),
       sellerId: String(row.student_id),
       sellerBio: row.seller_bio ?? undefined,
+      sellerAvatarUrl: row.seller_avatar_url ?? undefined,
       sellerRating: includeSellerRating ? ratings[index] : undefined
     })
   );

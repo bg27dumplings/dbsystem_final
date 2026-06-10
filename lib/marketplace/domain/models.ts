@@ -31,6 +31,7 @@ export type MarketplaceItem = {
   seller: string;
   sellerId: string;
   sellerBio?: string;
+  sellerAvatarUrl?: string;
   sellerRating?: StudentRatingSummary;
   status: ItemStatus;
   originalPrice: number;
@@ -49,8 +50,10 @@ export type AppointmentSummary = {
   itemTitle: string;
   buyer: string;
   buyerId: string;
+  buyerAvatarUrl?: string;
   seller: string;
   sellerId: string;
+  sellerAvatarUrl?: string;
   time: string;
   meetupAt: string;
   location: string;
@@ -61,6 +64,8 @@ export type AppointmentSummary = {
   exchangeValue?: string;
   note?: string;
   viewerRole: "buyer" | "seller";
+  imageUrl?: string;
+  hasUnreadUpdates: boolean;
 };
 
 export type PendingReview = {
@@ -75,6 +80,7 @@ export type StudentProfile = {
   studentNo: string;
   email: string;
   bio: string;
+  avatarUrl: string | null;
   rating: StudentRatingSummary;
 };
 
@@ -110,6 +116,7 @@ export type ChatRoomSummary = {
   id: string;
   itemTitle: string;
   counterpartName: string;
+  counterpartAvatarUrl?: string;
   lastMessage: string;
   isSeller: boolean;
   unreadCount: number;
@@ -128,6 +135,7 @@ export type ChatRoomDetail = {
   roomId: string;
   itemTitle: string;
   counterpartName: string;
+  counterpartAvatarUrl?: string;
   messages: ChatMessageRecord[];
 };
 

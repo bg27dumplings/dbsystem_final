@@ -38,7 +38,7 @@ export async function openChatRoomForItem(input: {
     });
     await connection.commit();
 
-    revalidatePath("/chat");
+    revalidatePath("/me/chat");
 
     return {
       ok: true,
@@ -83,8 +83,8 @@ export async function sendChatMessage(input: {
     });
     await connection.commit();
 
-    revalidatePath("/chat");
-    revalidatePath(`/chat/${room.id}`);
+    revalidatePath("/me/chat");
+    revalidatePath(`/me/chat/${room.id}`);
 
     return { ok: true };
   } catch {

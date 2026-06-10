@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
-import { MeSubnav } from "@/components/me/me-subnav";
+import { ImageViewer } from "@/components/image-viewer";
 import { StatusBadge } from "@/components/status-badge";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findItemsByStudentId } from "@/lib/marketplace/queries";
@@ -18,14 +18,13 @@ export default async function MyItemsPage({
 
   return (
     <section aria-labelledby="my-items-heading" className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-black text-campus-moss">我的</p>
-          <h1 id="my-items-heading" className="text-3xl font-black text-campus-ink">我的物品</h1>
+          <h2 id="my-items-heading" className="text-xl font-black text-campus-ink">我的物品</h2>
+          <p className="mt-1 text-sm text-slate-700">管理您上架的物品，隨時更新狀態或新增項目。</p>
         </div>
-        <Link href="/me/items/new" className="inline-flex min-h-12 items-center justify-center rounded-md bg-campus-gold px-4 py-3 font-black text-white">新增物品</Link>
+        <Link href="/me/items/new" className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-md bg-campus-gold px-4 py-3 font-black text-white">新增物品</Link>
       </div>
-      <MeSubnav active="items" />
       {created ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status">
           新物品已成功上架。
@@ -39,7 +38,15 @@ export default async function MyItemsPage({
       {items.length > 0 ? (
         <div className="grid gap-3">
           {items.map((item) => (
-            <article key={item.id} className="grid gap-3 rounded-lg bg-white p-4 shadow-sm ring-1 ring-campus-ink/10 sm:grid-cols-[1fr_auto] sm:items-center">
+            <article key={item.id} className="grid gap-3 rounded-lg bg-white p-4 shadow-sm ring-1 ring-campus-ink/10 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+              {item.images && item.images.length > 0 && (
+                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md border border-slate-200">
+                  <ImageViewer
+                    src={item.images[0]}
+                    alt={item.title}
+                  />
+                </div>
+              )}
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={item.status} />
@@ -57,8 +64,8 @@ export default async function MyItemsPage({
         </div>
       ) : (
         <EmptyState
-          title="你目前還沒有上架任何物品"
-          description="等你建立第一筆真實物品後，這裡才會顯示你的上架清單。"
+          title="目前沒有任何物品"
+          description="開始整理不需要的物資，發布第一件物品吧！"
           actionLabel="新增物品"
           actionHref="/me/items/new"
         />

@@ -5,8 +5,10 @@ import { ExchangeSummary } from "@/components/exchange-summary";
 import { MeSubnav } from "@/components/me/me-subnav";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { StatusBadge } from "@/components/status-badge";
+import { User } from "lucide-react";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findAppointmentByIdForStudent, findPendingReviews } from "@/lib/marketplace/queries";
+import { getStudentStats } from "@/lib/auth/student-repository";
 
 export default async function MyAppointmentDetailPage({
   params,
@@ -22,6 +24,18 @@ export default async function MyAppointmentDetailPage({
     findAppointmentByIdForStudent(session.studentId, id),
     findPendingReviews(session.studentId)
   ]);
+
+  let buyerStats = { totalDeals: 0, avgRating: null as number | null, totalReviews: 0 };
+  let sellerStats = { totalDeals: 0, avgRating: null as number | null, totalReviews: 0 };
+
+  if (appointment) {
+    const [bStats, sStats] = await Promise.all([
+      getStudentStats(Number(appointment.buyerId)),
+      getStudentStats(Number(appointment.sellerId))
+    ]);
+    buyerStats = bStats;
+    sellerStats = sStats;
+  }
 
   if (!appointment) {
     return (
@@ -39,7 +53,6 @@ export default async function MyAppointmentDetailPage({
 
   return (
     <section className="mx-auto max-w-3xl space-y-4" aria-labelledby="appointment-heading">
-      <MeSubnav active="appointments" />
       {query?.created === "1" ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status">
           面交預約已送出，賣家會在聊天室與「我的預約」收到通知。
@@ -58,8 +71,86 @@ export default async function MyAppointmentDetailPage({
           <h1 id="appointment-heading" className="text-3xl font-black text-campus-ink">{appointment.itemTitle}</h1>
         </div>
         <dl className="grid gap-3 rounded-lg bg-campus-paper p-4 sm:grid-cols-2">
-          <div><dt className="font-black">買家</dt><dd>{appointment.buyer}</dd></div>
-          <div><dt className="font-black">賣家</dt><dd>{appointment.seller}</dd></div>
+          <div>
+            <dt className="font-black">買家</dt>
+            <dd className="mt-1 relative group w-fit">
+              <div className="flex items-center gap-2 cursor-pointer">
+                <div className="h-6 w-6 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex items-center justify-center shrink-0">
+                  {appointment.buyerAvatarUrl ? (
+                    <img src={appointment.buyerAvatarUrl} alt={appointment.buyer} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+                  ) : (
+                    <User size={12} className="text-campus-ink transition-transform group-hover:scale-110" />
+                  )}
+                </div>
+                <span className="font-medium group-hover:text-campus-moss transition-colors">{appointment.buyer}</span>
+              </div>
+              <div className="absolute left-0 top-full z-10 mt-2 w-72 rounded-lg bg-white p-4 shadow-xl ring-1 ring-campus-ink/10 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:-translate-y-1">
+                <div className="flex justify-between space-x-4">
+                  <div className="h-12 w-12 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex items-center justify-center shrink-0">
+                    {appointment.buyerAvatarUrl ? (
+                      <img src={appointment.buyerAvatarUrl} alt={appointment.buyer} className="h-full w-full object-cover" />
+                    ) : (
+                      <User size={24} className="text-campus-ink" />
+                    )}
+                  </div>
+                  <div className="space-y-1 flex-1">
+                    <h4 className="text-sm font-black text-campus-ink">{appointment.buyer}</h4>
+                    <div className="flex items-center pt-2 gap-4">
+                      <div className="flex items-center text-xs text-slate-500">
+                        <span className="font-bold text-campus-moss mr-1">{buyerStats.avgRating ?? "0.0"}</span> 評價
+                      </div>
+                      <div className="flex items-center text-xs text-slate-500">
+                        <span className="font-bold text-campus-moss mr-1">{buyerStats.totalReviews}</span> 則評論
+                      </div>
+                      <div className="flex items-center text-xs text-slate-500">
+                        <span className="font-bold text-campus-moss mr-1">{buyerStats.totalDeals}</span> 筆交易
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </dd>
+          </div>
+          <div>
+            <dt className="font-black">賣家</dt>
+            <dd className="mt-1 relative group w-fit">
+              <div className="flex items-center gap-2 cursor-pointer">
+                <div className="h-6 w-6 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex items-center justify-center shrink-0">
+                  {appointment.sellerAvatarUrl ? (
+                    <img src={appointment.sellerAvatarUrl} alt={appointment.seller} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+                  ) : (
+                    <User size={12} className="text-campus-ink transition-transform group-hover:scale-110" />
+                  )}
+                </div>
+                <span className="font-medium group-hover:text-campus-moss transition-colors">{appointment.seller}</span>
+              </div>
+              <div className="absolute left-0 top-full z-10 mt-2 w-72 rounded-lg bg-white p-4 shadow-xl ring-1 ring-campus-ink/10 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:-translate-y-1">
+                <div className="flex justify-between space-x-4">
+                  <div className="h-12 w-12 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex items-center justify-center shrink-0">
+                    {appointment.sellerAvatarUrl ? (
+                      <img src={appointment.sellerAvatarUrl} alt={appointment.seller} className="h-full w-full object-cover" />
+                    ) : (
+                      <User size={24} className="text-campus-ink" />
+                    )}
+                  </div>
+                  <div className="space-y-1 flex-1">
+                    <h4 className="text-sm font-black text-campus-ink">{appointment.seller}</h4>
+                    <div className="flex items-center pt-2 gap-4">
+                      <div className="flex items-center text-xs text-slate-500">
+                        <span className="font-bold text-campus-moss mr-1">{sellerStats.avgRating ?? "0.0"}</span> 評價
+                      </div>
+                      <div className="flex items-center text-xs text-slate-500">
+                        <span className="font-bold text-campus-moss mr-1">{sellerStats.totalReviews}</span> 則評論
+                      </div>
+                      <div className="flex items-center text-xs text-slate-500">
+                        <span className="font-bold text-campus-moss mr-1">{sellerStats.totalDeals}</span> 筆交易
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </dd>
+          </div>
           <div><dt className="font-black">時間</dt><dd>{appointment.time}</dd></div>
           <div className="sm:col-span-2">
             <dt className="font-black">地點</dt>

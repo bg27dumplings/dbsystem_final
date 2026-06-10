@@ -35,6 +35,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json<OpenChatRoomResponse>({
     ok: true,
-    redirectTo: `/chat/${result.roomId}`
+    redirectTo: `/me/chat/${result.roomId}`
   });
 }

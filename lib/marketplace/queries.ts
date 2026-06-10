@@ -1,8 +1,7 @@
 export {
-  findEditableOwnedItemById,
   findActiveCategories,
   findAppointmentByIdForStudent,
-  findAppointmentDetailByIdForStudent,
+
   findAppointmentsByStudentId,
   findChatRoomByIdForStudent,
   findChatRoomsByStudentId,
@@ -11,6 +10,7 @@ export {
   findOwnedItemById,
   findPublicItems,
   countUnreadChatMessages,
+  countUnreadAppointments,
   findPendingAppointmentCount,
   findPendingReviews,
   findStudentProfileById

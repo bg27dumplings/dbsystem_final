@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStudentSession } from "@/lib/auth/student-session";
-import { updateStudentBio } from "@/lib/marketplace/infrastructure/student-profile-repository";
+import { updateStudentProfile } from "@/lib/marketplace/infrastructure/student-profile-repository";
+import { storeMarketplaceImage } from "@/lib/marketplace/infrastructure/item-storage";
 import { revalidatePath } from "next/cache";
 
 type ProfileResponse = {
@@ -18,10 +19,24 @@ export async function PUT(request: Request) {
     }, { status: 401 });
   }
 
-  const body = (await request.json()) as { bio?: string };
-  const bio = (body.bio ?? "").trim();
+  let bio: string;
+  let avatarUrl: string | null = null;
 
-  if (bio.length > 500) {
+  try {
+    const formData = await request.formData();
+    bio = (formData.get("bio") as string) ?? "";
+    avatarUrl = formData.get("avatarUrl") as string | null;
+    const avatarFile = formData.get("avatarFile") as File | null;
+
+    if (avatarFile && avatarFile.size > 0 && avatarFile.type.startsWith("image/")) {
+      const storedImage = await storeMarketplaceImage(avatarFile);
+      avatarUrl = storedImage.publicUrl;
+    }
+  } catch (error) {
+    return NextResponse.json({ error: "無效的請求格式" }, { status: 400 });
+  }
+
+  if (bio.trim().length > 500) {
     return NextResponse.json<ProfileResponse>({
       ok: false,
       formError: "請先修正欄位內容。",
@@ -29,7 +44,7 @@ export async function PUT(request: Request) {
     }, { status: 400 });
   }
 
-  await updateStudentBio(session.studentId, bio);
+  await updateStudentProfile(session.studentId, bio.trim(), avatarUrl ?? null);
   revalidatePath("/me/profile");
   revalidatePath("/me");
 

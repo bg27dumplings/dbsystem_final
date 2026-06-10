@@ -1,6 +1,5 @@
 import { syncAppointmentLifecycle } from "@/lib/marketplace/application/appointment-lifecycle-service";
 import {
-  findEditableMarketplaceItemById,
   findMarketplaceItemById,
   findMarketplaceItemsByStudentId,
   findOwnedMarketplaceItemById,
@@ -9,8 +8,8 @@ import {
 import {
   countPendingAppointmentsForStudent,
   findStudentAppointmentById,
-  findStudentAppointmentDetailById,
-  findStudentAppointments
+  findStudentAppointments,
+  countUnreadAppointments as findUnreadAppointmentsCount
 } from "@/lib/marketplace/infrastructure/appointment-repository";
 import { findStudentChatRoomById, findStudentChatRooms, countUnreadChatMessages as findUnreadCount } from "@/lib/marketplace/infrastructure/chat-repository";
 import { findActiveMarketplaceCategories } from "@/lib/marketplace/infrastructure/category-repository";
@@ -35,9 +34,7 @@ export async function findOwnedItemById(studentId: number, itemId: string) {
   return findOwnedMarketplaceItemById(studentId, itemId);
 }
 
-export async function findEditableOwnedItemById(studentId: number, itemId: string) {
-  return findEditableMarketplaceItemById(studentId, itemId);
-}
+
 
 export async function findAppointmentsByStudentId(studentId: number) {
   await syncAppointmentLifecycle();
@@ -49,9 +46,7 @@ export async function findAppointmentByIdForStudent(studentId: number, appointme
   return findStudentAppointmentById(studentId, appointmentId);
 }
 
-export async function findAppointmentDetailByIdForStudent(studentId: number, appointmentId: string) {
-  return findStudentAppointmentDetailById(studentId, appointmentId);
-}
+
 
 export async function findPendingReviews(studentId: number) {
   await syncAppointmentLifecycle();
@@ -60,6 +55,10 @@ export async function findPendingReviews(studentId: number) {
 
 export async function findPendingAppointmentCount(studentId: number) {
   return countPendingAppointmentsForStudent(studentId);
+}
+
+export async function countUnreadAppointments(studentId: number) {
+  return findUnreadAppointmentsCount(studentId);
 }
 
 export async function findStudentProfileById(studentId: number) {

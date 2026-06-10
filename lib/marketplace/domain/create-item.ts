@@ -46,7 +46,7 @@ export type ValidatedMarketplaceItemInput = {
   quantity: number;
   locationX: number | null;
   locationY: number | null;
-  exchangeMode: "price" | "treat_drink" | "treat_food" | "free";
+  exchangeMode: "price" | "treat_drink" | "treat_food" | "free" | "custom";
   exchangeLabel: string;
   exchangeValue: string | null;
   originalPrice: number;

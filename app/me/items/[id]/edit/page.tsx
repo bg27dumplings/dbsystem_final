@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { MeSubnav } from "@/components/me/me-subnav";
 import { ItemForm } from "@/components/items/item-form";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findActiveCategories, findOwnedItemById } from "@/lib/marketplace/queries";
@@ -29,11 +28,12 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
 
   return (
     <section className="space-y-4">
-      <div>
-        <p className="text-sm font-black text-campus-moss">我的</p>
-        <h1 className="text-3xl font-black text-campus-ink">編輯物品</h1>
+      <div className="flex items-center gap-2">
+        <Link href="/me/items" className="text-sm font-bold text-slate-500 hover:text-campus-moss">
+          &larr; 返回
+        </Link>
+        <h1 className="text-xl font-black text-campus-ink">編輯物品</h1>
       </div>
-      <MeSubnav active="items" />
       <div className="rounded-lg bg-white p-5 shadow-sm ring-1 ring-campus-ink/10">
         <ItemForm
           categories={categories}

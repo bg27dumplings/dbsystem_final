@@ -1,0 +1,209 @@
+diff --git a/lib/marketplace/application/item-update-service.ts b/lib/marketplace/application/item-update-service.ts
+new file mode 100644
+index 0000000..41b1d52
+--- /dev/null
++++ b/lib/marketplace/application/item-update-service.ts
+@@ -0,0 +1,203 @@
++import "server-only";
++import { revalidatePath } from "next/cache";
++import { getDbPool } from "@/lib/db";
++import { MARKETPLACE_CONDITION_OPTIONS } from "@/lib/marketplace/domain/constants";
++import { buildExchangeDescriptor, normalizeExchangeMode } from "@/lib/marketplace/domain/exchange";
++import type { CreateMarketplaceItemFieldErrors } from "@/lib/marketplace/domain/create-item";
++import { findActiveMarketplaceCategories } from "@/lib/marketplace/infrastructure/category-repository";
++import { cancelPendingAppointmentsAfterItemEdit } from "@/lib/marketplace/application/item-edit-side-effects";
++import { findOwnedMarketplaceItemById } from "@/lib/marketplace/infrastructure/item-repository";
++import { removeStoredMarketplaceImage, storeMarketplaceImage } from "@/lib/marketplace/infrastructure/item-storage";
++import {
++  deleteMarketplaceItemImages,
++  insertMarketplaceItemImage,
++  updateMarketplaceItemRecord
++} from "@/lib/marketplace/infrastructure/item-write-repository";
++
++export type UpdateMarketplaceItemResult =
++  | { ok: true; itemId: string }
++  | { ok: false; formError: string; fieldErrors: CreateMarketplaceItemFieldErrors };
++
++function buildExchangeDetails(exchangeMode: string, exchangeValue: string) {
++  const normalizedExchangeMode = normalizeExchangeMode(exchangeMode);
++  if (!normalizedExchangeMode) {
++    return {
++      ok: false as const,
++      field: "exchangeMode" as const,
++      message: "請選擇有效的交換條件。"
++    };
++  }
++
++  const descriptor = buildExchangeDescriptor(normalizedExchangeMode, exchangeValue);
++  if (!descriptor) {
++    return {
++      ok: false as const,
++      field: "exchangeValue" as const,
++      message: normalizedExchangeMode === "price" ? "請輸入大於或等於 0 的價格。" : "請補充交換內容。"
++    };
++  }
++
++  return {
++    ok: true as const,
++    exchangeMode: normalizedExchangeMode,
++    exchangeLabel: descriptor.exchangeLabel,
++    exchangeValue: descriptor.exchangeValue ?? null,
++    originalPrice: 0,
++    salePrice: normalizedExchangeMode === "price" ? Number(descriptor.exchangeValue) : null,
++    exchangeNote: descriptor.exchangeLabel
++  };
++}
++
++export async function updateMarketplaceItem(input: {
++  itemId: string;
++  studentId: number;
++  title: string;
++  categoryId: string;
++  conditionLabel: string;
++  location: string;
++  quantity: string;
++  locationX: string;
++  locationY: string;
++  exchangeMode: string;
++  exchangeValue: string;
++  description: string;
++  images: File[];
++}): Promise<UpdateMarketplaceItemResult> {
++  const existingItem = await findOwnedMarketplaceItemById(input.studentId, input.itemId);
++  if (!existingItem) {
++    return {
++      ok: false,
++      formError: "找不到這筆物品，或你沒有權限編輯。",
++      fieldErrors: {}
++    };
++  }
++
++  if (!["active", "hidden", "reserved"].includes(existingItem.status)) {
++    return {
++      ok: false,
++      formError: "這筆物品目前無法編輯。",
++      fieldErrors: {}
++    };
++  }
++
++  const title = input.title.trim();
++  const categoryId = input.categoryId.trim();
++  const conditionLabel = input.conditionLabel.trim();
++  const location = input.location.trim();
++  const description = input.description.trim();
++  const fieldErrors: CreateMarketplaceItemFieldErrors = {};
++
++  if (!title) {
++    fieldErrors.title = "請輸入物品名稱。";
++  }
++
++  const categories = await findActiveMarketplaceCategories();
++  const matchedCategory = categories.find((category) => category.id === categoryId);
++  if (!matchedCategory) {
++    fieldErrors.categoryId = "請選擇有效的分類。";
++  }
++
++  if (!conditionLabel || !MARKETPLACE_CONDITION_OPTIONS.includes(conditionLabel as (typeof MARKETPLACE_CONDITION_OPTIONS)[number])) {
++    fieldErrors.conditionLabel = "請選擇有效的新舊程度。";
++  }
++
++  if (!location) {
++    fieldErrors.location = "請輸入面交地點。";
++  }
++
++  const quantity = Number(input.quantity.trim() || "1");
++  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
++    fieldErrors.quantity = "請輸入 1 到 99 的數量。";
++  }
++
++  const exchangeDetails = buildExchangeDetails(input.exchangeMode.trim(), input.exchangeValue);
++  if (!exchangeDetails.ok) {
++    fieldErrors[exchangeDetails.field] = exchangeDetails.message;
++  }
++
++  if (!description) {
++    fieldErrors.description = "請輸入詳細描述。";
++  }
++
++  if (input.images.length > 5) {
++    fieldErrors.images = "最多只能上傳 5 張圖片。";
++  } else if (input.images.length > 0 && input.images.some((file) => !file.type.startsWith("image/"))) {
++    fieldErrors.images = "只接受圖片檔案格式。";
++  }
++
++  if (Object.keys(fieldErrors).length > 0 || !matchedCategory || !exchangeDetails.ok) {
++    return {
++      ok: false,
++      fieldErrors,
++      formError: "請先修正欄位內容。"
++    };
++  }
++
++  const pool = getDbPool();
++  const connection = await pool.getConnection();
++  const storedPaths: string[] = [];
++
++  try {
++    await connection.beginTransaction();
++
++    await updateMarketplaceItemRecord(connection, {
++      itemId: Number(existingItem.id),
++      categoryId: Number(matchedCategory.id),
++      title,
++      description,
++      exchangeNote: exchangeDetails.exchangeNote,
++      conditionLabel,
++      location,
++      quantity,
++      locationX: input.locationX.trim() ? Number(input.locationX) : null,
++      locationY: input.locationY.trim() ? Number(input.locationY) : null,
++      originalPrice: exchangeDetails.originalPrice,
++      salePrice: exchangeDetails.salePrice
++    });
++
++    if (input.images.length > 0) {
++      await deleteMarketplaceItemImages(connection, Number(existingItem.id));
++
++      for (const [index, image] of input.images.entries()) {
++        const storedImage = await storeMarketplaceImage(image);
++        storedPaths.push(storedImage.storagePath);
++
++        await insertMarketplaceItemImage(connection, {
++          itemId: Number(existingItem.id),
++          storagePath: storedImage.storagePath,
++          publicUrl: storedImage.publicUrl,
++          altText: `${title} 照片 ${index + 1}`,
++          mimeType: storedImage.mimeType,
++          fileSize: storedImage.fileSize,
++          sortOrder: index,
++          isPrimary: index === 0
++        });
++      }
++    }
++
++    await connection.commit();
++    await cancelPendingAppointmentsAfterItemEdit(Number(existingItem.id), title);
++
++    revalidatePath("/");
++    revalidatePath("/search");
++    revalidatePath("/me/items");
++    revalidatePath(`/me/items/${existingItem.id}/edit`);
++    revalidatePath(`/items/${existingItem.id}`);
++
++    return {
++      ok: true,
++      itemId: existingItem.id
++    };
++  } catch (error) {
++    await connection.rollback();
++    await Promise.all(storedPaths.map(removeStoredMarketplaceImage));
++
++    return {
++      ok: false,
++      fieldErrors: {},
++      formError: error instanceof Error ? error.message : "物品更新失敗，請稍後再試。"
++    };
++  } finally {
++    connection.release();
++  }
++}

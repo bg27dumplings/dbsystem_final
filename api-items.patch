@@ -1,0 +1,273 @@
+diff --git a/app/api/items/[id]/deactivate/route.ts b/app/api/items/[id]/deactivate/route.ts
+deleted file mode 100644
+index bd34d3e..0000000
+--- a/app/api/items/[id]/deactivate/route.ts
++++ /dev/null
+@@ -1,41 +0,0 @@
+-import { NextResponse } from "next/server";
+-import { getStudentSession } from "@/lib/auth/student-session";
+-import { changeMarketplaceItemStatus } from "@/lib/marketplace/application/item-management-service";
+-
+-type ChangeStatusResponse = {
+-  ok: boolean;
+-  redirectTo?: string;
+-  formError?: string;
+-};
+-
+-export async function POST(
+-  _request: Request,
+-  { params }: { params: Promise<{ id: string }> }
+-) {
+-  const session = await getStudentSession();
+-  if (!session || session.status !== "active") {
+-    return NextResponse.json<ChangeStatusResponse>({
+-      ok: false,
+-      formError: "請先登入有效的學生帳號。"
+-    }, { status: 401 });
+-  }
+-
+-  const { id } = await params;
+-  const result = await changeMarketplaceItemStatus({
+-    itemId: id,
+-    studentId: session.studentId,
+-    action: "deactivate"
+-  });
+-
+-  if (!result.ok) {
+-    return NextResponse.json<ChangeStatusResponse>({
+-      ok: false,
+-      formError: result.formError
+-    }, { status: 400 });
+-  }
+-
+-  return NextResponse.json<ChangeStatusResponse>({
+-    ok: true,
+-    redirectTo: "/me/items?deactivated=1"
+-  });
+-}
+diff --git a/app/api/items/[id]/delete/route.ts b/app/api/items/[id]/delete/route.ts
+deleted file mode 100644
+index a8ebf78..0000000
+--- a/app/api/items/[id]/delete/route.ts
++++ /dev/null
+@@ -1,41 +0,0 @@
+-import { NextResponse } from "next/server";
+-import { getStudentSession } from "@/lib/auth/student-session";
+-import { changeMarketplaceItemStatus } from "@/lib/marketplace/application/item-management-service";
+-
+-type ChangeStatusResponse = {
+-  ok: boolean;
+-  redirectTo?: string;
+-  formError?: string;
+-};
+-
+-export async function POST(
+-  _request: Request,
+-  { params }: { params: Promise<{ id: string }> }
+-) {
+-  const session = await getStudentSession();
+-  if (!session || session.status !== "active") {
+-    return NextResponse.json<ChangeStatusResponse>({
+-      ok: false,
+-      formError: "請先登入有效的學生帳號。"
+-    }, { status: 401 });
+-  }
+-
+-  const { id } = await params;
+-  const result = await changeMarketplaceItemStatus({
+-    itemId: id,
+-    studentId: session.studentId,
+-    action: "delete"
+-  });
+-
+-  if (!result.ok) {
+-    return NextResponse.json<ChangeStatusResponse>({
+-      ok: false,
+-      formError: result.formError
+-    }, { status: 400 });
+-  }
+-
+-  return NextResponse.json<ChangeStatusResponse>({
+-    ok: true,
+-    redirectTo: "/me/items?deleted=1"
+-  });
+-}
+diff --git a/app/api/items/[id]/reactivate/route.ts b/app/api/items/[id]/reactivate/route.ts
+deleted file mode 100644
+index a173b7d..0000000
+--- a/app/api/items/[id]/reactivate/route.ts
++++ /dev/null
+@@ -1,41 +0,0 @@
+-import { NextResponse } from "next/server";
+-import { getStudentSession } from "@/lib/auth/student-session";
+-import { changeMarketplaceItemStatus } from "@/lib/marketplace/application/item-management-service";
+-
+-type ChangeStatusResponse = {
+-  ok: boolean;
+-  redirectTo?: string;
+-  formError?: string;
+-};
+-
+-export async function POST(
+-  _request: Request,
+-  { params }: { params: Promise<{ id: string }> }
+-) {
+-  const session = await getStudentSession();
+-  if (!session || session.status !== "active") {
+-    return NextResponse.json<ChangeStatusResponse>({
+-      ok: false,
+-      formError: "請先登入有效的學生帳號。"
+-    }, { status: 401 });
+-  }
+-
+-  const { id } = await params;
+-  const result = await changeMarketplaceItemStatus({
+-    itemId: id,
+-    studentId: session.studentId,
+-    action: "reactivate"
+-  });
+-
+-  if (!result.ok) {
+-    return NextResponse.json<ChangeStatusResponse>({
+-      ok: false,
+-      formError: result.formError
+-    }, { status: 400 });
+-  }
+-
+-  return NextResponse.json<ChangeStatusResponse>({
+-    ok: true,
+-    redirectTo: "/me/items?reactivated=1"
+-  });
+-}
+diff --git a/app/api/items/[id]/route.ts b/app/api/items/[id]/route.ts
+index 7020ea9..f41e2f2 100644
+--- a/app/api/items/[id]/route.ts
++++ b/app/api/items/[id]/route.ts
+@@ -1,21 +1,16 @@
+ import { NextResponse } from "next/server";
+ import { getStudentSession } from "@/lib/auth/student-session";
+-import {
+-  type UpdateMarketplaceItemFieldErrors,
+-  updateMarketplaceItemDetails
+-} from "@/lib/marketplace/application/item-management-service";
++import { updateMarketplaceItem } from "@/lib/marketplace/application/item-update-service";
++import type { CreateMarketplaceItemFieldErrors } from "@/lib/marketplace/domain/create-item";
+ 
+ type UpdateItemResponse = {
+   ok: boolean;
+   redirectTo?: string;
+   formError?: string;
+-  fieldErrors?: UpdateMarketplaceItemFieldErrors;
++  fieldErrors?: CreateMarketplaceItemFieldErrors;
+ };
+ 
+-export async function PATCH(
+-  request: Request,
+-  { params }: { params: Promise<{ id: string }> }
+-) {
++export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+   const session = await getStudentSession();
+   if (!session || session.status !== "active") {
+     return NextResponse.json<UpdateItemResponse>({
+@@ -24,23 +19,24 @@ export async function PATCH(
+     }, { status: 401 });
+   }
+ 
+-  const { id } = await params;
++  const { id } = await context.params;
+   const formData = await request.formData();
+-  const newImageFiles = formData.getAll("newImages").filter((value): value is File => value instanceof File && value.size > 0);
+-  const result = await updateMarketplaceItemDetails({
++  const images = formData.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
++
++  const result = await updateMarketplaceItem({
+     itemId: id,
+     studentId: session.studentId,
+     title: String(formData.get("title") ?? ""),
+     categoryId: String(formData.get("categoryId") ?? ""),
+     conditionLabel: String(formData.get("conditionLabel") ?? ""),
+     location: String(formData.get("location") ?? ""),
++    quantity: String(formData.get("quantity") ?? "1"),
++    locationX: String(formData.get("locationX") ?? ""),
++    locationY: String(formData.get("locationY") ?? ""),
+     exchangeMode: String(formData.get("exchangeMode") ?? ""),
+     exchangeValue: String(formData.get("exchangeValue") ?? ""),
+     description: String(formData.get("description") ?? ""),
+-    keptImageIds: formData.getAll("keptImageIds").map(String),
+-    imageOrder: formData.getAll("imageOrder").map(String),
+-    newImageKeys: formData.getAll("newImageKeys").map(String),
+-    newImageFiles
++    images
+   });
+ 
+   if (!result.ok) {
+@@ -53,6 +49,6 @@ export async function PATCH(
+ 
+   return NextResponse.json<UpdateItemResponse>({
+     ok: true,
+-    redirectTo: "/me/items?updated=1"
++    redirectTo: `/me/items?updated=1`
+   });
+ }
+diff --git a/app/api/items/route.ts b/app/api/items/route.ts
+index d91a13e..0082b5f 100644
+--- a/app/api/items/route.ts
++++ b/app/api/items/route.ts
+@@ -28,6 +28,9 @@ export async function POST(request: Request) {
+     categoryId: String(formData.get("categoryId") ?? ""),
+     conditionLabel: String(formData.get("conditionLabel") ?? ""),
+     location: String(formData.get("location") ?? ""),
++    quantity: String(formData.get("quantity") ?? "1"),
++    locationX: String(formData.get("locationX") ?? ""),
++    locationY: String(formData.get("locationY") ?? ""),
+     exchangeMode: String(formData.get("exchangeMode") ?? ""),
+     exchangeValue: String(formData.get("exchangeValue") ?? ""),
+     description: String(formData.get("description") ?? ""),
+diff --git a/app/api/reviews/route.ts b/app/api/reviews/route.ts
+new file mode 100644
+index 0000000..a92068b
+--- /dev/null
++++ b/app/api/reviews/route.ts
+@@ -0,0 +1,42 @@
++import { NextResponse } from "next/server";
++import { getStudentSession } from "@/lib/auth/student-session";
++import { submitReview } from "@/lib/marketplace/application/review-service";
++
++type ReviewResponse = {
++  ok: boolean;
++  formError?: string;
++  fieldErrors?: { rating?: string; comment?: string };
++};
++
++export async function POST(request: Request) {
++  const session = await getStudentSession();
++  if (!session || session.status !== "active") {
++    return NextResponse.json<ReviewResponse>({
++      ok: false,
++      formError: "請先登入有效的學生帳號。"
++    }, { status: 401 });
++  }
++
++  const body = (await request.json()) as {
++    appointmentId?: string;
++    rating?: number;
++    comment?: string;
++  };
++
++  const result = await submitReview({
++    appointmentId: body.appointmentId ?? "",
++    studentId: session.studentId,
++    rating: Number(body.rating),
++    comment: body.comment ?? ""
++  });
++
++  if (!result.ok) {
++    return NextResponse.json<ReviewResponse>({
++      ok: false,
++      formError: result.formError,
++      fieldErrors: result.fieldErrors
++    }, { status: 400 });
++  }
++
++  return NextResponse.json<ReviewResponse>({ ok: true });
++}

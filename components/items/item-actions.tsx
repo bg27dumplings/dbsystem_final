@@ -44,7 +44,7 @@ export function ItemActions({
         return;
       }
 
-      window.location.assign(result.redirectTo ?? "/chat");
+      window.location.assign(result.redirectTo ?? "/me/chat");
     } catch {
       setChatError("聊天室建立失敗，請稍後再試。");
     } finally {

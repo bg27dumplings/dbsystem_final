@@ -9,6 +9,9 @@ function get_dashboard_snapshot(): array
         'stats' => get_dashboard_stats(),
         'categoryRows' => get_dashboard_category_rows(),
         'monthRows' => get_dashboard_month_rows(),
+        'appointmentStatusRows' => get_dashboard_appointment_status_rows(),
+        'exchangeModeRows' => get_dashboard_exchange_mode_rows(),
+        'itemMonthRows' => get_dashboard_item_month_rows(),
     ];
 }
 
@@ -38,6 +41,35 @@ function get_dashboard_month_rows(): array
     return db()->query(
         "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS total
          FROM students
+         GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+         ORDER BY month
+         LIMIT 6"
+    )->fetchAll();
+}
+
+function get_dashboard_appointment_status_rows(): array
+{
+    return db()->query(
+        "SELECT status, COUNT(*) AS total
+         FROM appointments
+         GROUP BY status"
+    )->fetchAll();
+}
+
+function get_dashboard_exchange_mode_rows(): array
+{
+    return db()->query(
+        "SELECT exchange_mode, COUNT(*) AS total
+         FROM items
+         GROUP BY exchange_mode"
+    )->fetchAll();
+}
+
+function get_dashboard_item_month_rows(): array
+{
+    return db()->query(
+        "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS total
+         FROM items
          GROUP BY DATE_FORMAT(created_at, '%Y-%m')
          ORDER BY month
          LIMIT 6"

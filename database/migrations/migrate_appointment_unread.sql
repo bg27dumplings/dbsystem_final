@@ -1,0 +1,2 @@
+ALTER TABLE appointments ADD COLUMN buyer_unread TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE appointments ADD COLUMN seller_unread TINYINT(1) NOT NULL DEFAULT 0;

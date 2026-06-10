@@ -18,7 +18,9 @@ type AppointmentRow = RowDataPacket & {
   status: AppointmentSummary["status"];
   item_title: string;
   buyer_name: string;
+  buyer_avatar_url: string | null;
   seller_name: string;
+  seller_avatar_url: string | null;
 };
 
 export type AppointmentRecord = {
@@ -31,17 +33,23 @@ export type AppointmentRecord = {
   location: string;
   itemTitle: string;
   buyerName: string;
+  buyerAvatarUrl?: string;
   sellerName: string;
+  sellerAvatarUrl?: string;
 };
 
-const SELECT_APPOINTMENT_FIELDS = `SELECT a.id, a.item_id, a.buyer_id, a.seller_id, a.meetup_at, a.location, a.location_x, a.location_y, a.amount, a.exchange_mode, a.exchange_value, a.note, a.status,
+const SELECT_APPOINTMENT_FIELDS = `SELECT a.id, a.item_id, a.buyer_id, a.seller_id, a.meetup_at, a.location, a.location_x, a.location_y, a.amount, a.exchange_mode, a.exchange_value, a.note, a.status, a.buyer_unread, a.seller_unread,
         i.title AS item_title,
         buyer.name AS buyer_name,
-        seller.name AS seller_name
+        buyer.avatar_url AS buyer_avatar_url,
+        seller.name AS seller_name,
+        seller.avatar_url AS seller_avatar_url,
+        img.public_url AS image_url
  FROM appointments a
  JOIN items i ON i.id = a.item_id
  JOIN students buyer ON buyer.id = a.buyer_id
- JOIN students seller ON seller.id = a.seller_id`;
+ JOIN students seller ON seller.id = a.seller_id
+ LEFT JOIN item_images img ON img.item_id = a.item_id AND img.is_primary = 1`;
 
 function mapAppointmentRecord(row: AppointmentRow): AppointmentRecord {
   return {
@@ -54,7 +62,9 @@ function mapAppointmentRecord(row: AppointmentRow): AppointmentRecord {
     location: row.location,
     itemTitle: row.item_title,
     buyerName: row.buyer_name,
-    sellerName: row.seller_name
+    buyerAvatarUrl: row.buyer_avatar_url ?? undefined,
+    sellerName: row.seller_name,
+    sellerAvatarUrl: row.seller_avatar_url ?? undefined
   };
 }
 
@@ -63,7 +73,7 @@ export async function findStudentAppointments(studentId: number) {
   const [rows] = await pool.execute<AppointmentRow[]>(
     `${SELECT_APPOINTMENT_FIELDS}
      WHERE a.buyer_id = ? OR a.seller_id = ?
-     ORDER BY a.meetup_at DESC`,
+     ORDER BY a.updated_at DESC`,
     [studentId, studentId]
   );
 
@@ -80,7 +90,15 @@ export async function findStudentAppointmentById(studentId: number, appointmentI
   );
 
   const row = rows[0];
-  return row ? mapAppointmentSummary(row, studentId) : null;
+  if (!row) return null;
+
+  if (row.buyer_id === studentId && row.buyer_unread === 1) {
+    await pool.execute(`UPDATE appointments SET buyer_unread = 0 WHERE id = ?`, [appointmentId]);
+  } else if (row.seller_id === studentId && row.seller_unread === 1) {
+    await pool.execute(`UPDATE appointments SET seller_unread = 0 WHERE id = ?`, [appointmentId]);
+  }
+
+  return mapAppointmentSummary(row, studentId);
 }
 
 export async function findAppointmentRecordById(appointmentId: string) {
@@ -130,4 +148,16 @@ export async function hasPendingAppointmentForBuyerItem(itemId: number, buyerId:
   );
 
   return Number(rows[0]?.total ?? 0) > 0;
+}
+
+export async function countUnreadAppointments(studentId: number): Promise<number> {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<(RowDataPacket & { count: number })[]>(
+    `SELECT COUNT(*) AS count
+     FROM appointments
+     WHERE (buyer_id = ? AND buyer_unread = 1) OR (seller_id = ? AND seller_unread = 1)`,
+    [studentId, studentId]
+  );
+
+  return rows[0]?.count ?? 0;
 }

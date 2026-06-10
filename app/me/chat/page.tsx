@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { User } from "lucide-react";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findChatRoomsByStudentId } from "@/lib/marketplace/queries";
 
@@ -9,7 +10,7 @@ export default async function ChatPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab = "buy" } = await searchParams;
-  const session = await requireStudentSession("/chat");
+  const session = await requireStudentSession("/me/chat");
   const rooms = await findChatRoomsByStudentId(session.studentId);
 
   const buyRooms = rooms.filter((r) => !r.isSeller);
@@ -22,14 +23,10 @@ export default async function ChatPage({
 
   return (
     <section aria-labelledby="chat-heading" className="space-y-4 max-w-3xl mx-auto">
-      <div>
-        <p className="text-sm font-black text-campus-moss">聊天</p>
-        <h1 id="chat-heading" className="text-3xl font-black text-campus-ink">訊息中心</h1>
-      </div>
 
       <div className="flex border-b border-campus-ink/10">
         <Link
-          href="/chat?tab=buy"
+          href="/me/chat?tab=buy"
           className={`flex-1 py-3 text-center font-black border-b-2 text-sm transition-colors ${
             tab === "buy"
               ? "border-campus-moss text-campus-moss"
@@ -44,7 +41,7 @@ export default async function ChatPage({
           )}
         </Link>
         <Link
-          href="/chat?tab=sell"
+          href="/me/chat?tab=sell"
           className={`flex-1 py-3 text-center font-black border-b-2 text-sm transition-colors ${
             tab === "sell"
               ? "border-campus-moss text-campus-moss"
@@ -65,13 +62,22 @@ export default async function ChatPage({
           {activeRooms.map((room) => (
             <Link
               key={room.id}
-              href={`/chat/${room.id}`}
+              href={`/me/chat/${room.id}`}
               className="rounded-lg bg-white p-4 shadow-sm ring-1 ring-campus-ink/10 hover:shadow-lift flex items-start justify-between"
             >
-              <div className="space-y-1">
-                <p className="font-black text-campus-ink text-base">{room.counterpartName}</p>
-                <p className="text-xs font-bold text-campus-moss">關於「{room.itemTitle}」</p>
-                <p className="text-sm text-slate-700 leading-normal">{room.lastMessage}</p>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 h-10 w-10 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex items-center justify-center shrink-0">
+                  {room.counterpartAvatarUrl ? (
+                    <img src={room.counterpartAvatarUrl} alt={room.counterpartName} className="h-full w-full object-cover" />
+                  ) : (
+                    <User size={20} className="text-campus-ink" />
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="font-black text-campus-ink text-base">{room.counterpartName}</p>
+                  <p className="text-xs font-bold text-campus-moss">關於：「{room.itemTitle}」</p>
+                  <p className="text-sm text-slate-700 leading-normal line-clamp-1">{room.lastMessage}</p>
+                </div>
               </div>
               {room.unreadCount > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white">

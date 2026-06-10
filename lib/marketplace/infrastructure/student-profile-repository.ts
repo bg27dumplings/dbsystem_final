@@ -9,12 +9,13 @@ type StudentProfileRow = RowDataPacket & {
   student_no: string;
   email: string;
   bio: string | null;
+  avatar_url: string | null;
 };
 
 export async function findStudentProfile(studentId: number): Promise<StudentProfile | null> {
   const pool = getDbPool();
   const [rows] = await pool.execute<StudentProfileRow[]>(
-    `SELECT name, student_no, email, bio
+    `SELECT name, student_no, email, bio, avatar_url
      FROM students
      WHERE id = ? AND status = 'active'
      LIMIT 1`,
@@ -33,24 +34,25 @@ export async function findStudentProfile(studentId: number): Promise<StudentProf
     studentNo: row.student_no,
     email: row.email,
     bio: row.bio ?? "",
+    avatarUrl: row.avatar_url ?? null,
     rating
   };
 }
 
-export async function updateStudentBio(studentId: number, bio: string) {
+export async function updateStudentProfile(studentId: number, bio: string, avatarUrl: string | null) {
   const pool = getDbPool();
   await pool.execute(
     `UPDATE students
-     SET bio = ?, updated_at = CURRENT_TIMESTAMP
+     SET bio = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
-    [bio, studentId]
+    [bio, avatarUrl, studentId]
   );
 }
 
 export async function findPublicStudentProfile(studentId: number) {
   const pool = getDbPool();
-  const [rows] = await pool.execute<(RowDataPacket & { name: string; bio: string | null })[]>(
-    `SELECT name, bio
+  const [rows] = await pool.execute<(RowDataPacket & { name: string; bio: string | null; avatar_url: string | null })[]>(
+    `SELECT name, bio, avatar_url
      FROM students
      WHERE id = ? AND status = 'active'
      LIMIT 1`,
@@ -67,6 +69,7 @@ export async function findPublicStudentProfile(studentId: number) {
   return {
     name: row.name,
     bio: row.bio ?? "",
+    avatarUrl: row.avatar_url ?? null,
     rating
   };
 }

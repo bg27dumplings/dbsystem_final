@@ -75,7 +75,6 @@ export default async function NewAppointmentPage({
       <AppointmentForm
         itemId={item.id}
         initialLocation={item.location}
-        initialMapPoint={item.mapPoint}
         initialExchangeMode={toSupportedExchangeMode(item.exchangeMode)}
         initialExchangeValue={item.exchangeMode === "price" ? String(item.salePrice ?? "") : item.exchangeValue ?? ""}
       />

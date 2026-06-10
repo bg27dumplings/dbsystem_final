@@ -31,8 +31,9 @@ export async function insertAppointment(
       exchange_mode,
       exchange_value,
       note,
-      status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      status,
+      seller_unread
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 1)`,
     [
       input.itemId,
       input.buyerId,
@@ -53,16 +54,26 @@ export async function insertAppointment(
 
 export async function updateAppointmentStatus(
   connection: mysql.PoolConnection,
-  appointmentId: number,
-  status: AppointmentStatus,
-  completedAt: string | null = null
+  params: {
+    appointmentId: number;
+    nextStatus: AppointmentStatus;
+    setCompletedAt?: boolean;
+    triggerStudentId?: number;
+  }
 ) {
-  await connection.execute(
-    `UPDATE appointments
-     SET status = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?`,
-    [status, completedAt, appointmentId]
-  );
+  const completedAtValue = params.setCompletedAt ? "CURRENT_TIMESTAMP" : "completed_at";
+  let query = `UPDATE appointments SET status = ?, completed_at = ${completedAtValue}, updated_at = CURRENT_TIMESTAMP`;
+  const sqlParams: any[] = [params.nextStatus];
+
+  if (params.triggerStudentId) {
+    query += `, buyer_unread = CASE WHEN seller_id = ? THEN 1 ELSE buyer_unread END, seller_unread = CASE WHEN buyer_id = ? THEN 1 ELSE seller_unread END`;
+    sqlParams.push(params.triggerStudentId, params.triggerStudentId);
+  }
+
+  query += ` WHERE id = ?`;
+  sqlParams.push(params.appointmentId);
+
+  await connection.execute(query, sqlParams);
 }
 
 export async function rejectOtherPendingAppointments(

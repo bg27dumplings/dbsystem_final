@@ -110,7 +110,7 @@ export async function acceptAppointment(input: {
 
   try {
     await connection.beginTransaction();
-    await updateAppointmentStatus(connection, appointment.id, "accepted");
+    await updateAppointmentStatus(connection, { appointmentId: appointment.id, nextStatus: "accepted", triggerStudentId: input.studentId });
     await syncItemVisibility(connection, appointment.itemId);
     await rejectRemainingPendingWhenFull(connection, appointment.itemId);
     await notifyParticipants(connection, {
@@ -153,7 +153,7 @@ export async function rejectAppointment(input: {
 
   try {
     await connection.beginTransaction();
-    await updateAppointmentStatus(connection, appointment.id, "rejected");
+    await updateAppointmentStatus(connection, { appointmentId: appointment.id, nextStatus: "rejected", triggerStudentId: input.studentId });
     await notifyParticipants(connection, {
       itemId: appointment.itemId,
       buyerId: appointment.buyerId,
@@ -195,7 +195,7 @@ export async function cancelAppointment(input: {
 
   try {
     await connection.beginTransaction();
-    await updateAppointmentStatus(connection, appointment.id, "cancelled");
+    await updateAppointmentStatus(connection, { appointmentId: appointment.id, nextStatus: "cancelled", triggerStudentId: input.studentId });
 
     if (appointment.status === "accepted") {
       await syncItemVisibility(connection, appointment.itemId);
@@ -223,9 +223,7 @@ function revalidateAppointmentPaths(appointmentId: string) {
   revalidatePath("/me");
   revalidatePath("/me/appointments");
   revalidatePath(`/me/appointments/${appointmentId}`);
-  revalidatePath("/appointments");
-  revalidatePath(`/appointments/${appointmentId}`);
-  revalidatePath("/chat");
+  revalidatePath("/me/chat");
   revalidatePath("/me/items");
   revalidatePath("/");
   revalidatePath("/search");

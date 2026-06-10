@@ -4,7 +4,9 @@ import { ItemActions } from "@/components/items/item-actions";
 import { CampusMapDisplay } from "@/components/location/campus-map-display";
 import { StarRating } from "@/components/reviews/star-rating";
 import { StatusBadge } from "@/components/status-badge";
+import { ItemGallery } from "@/components/items/item-gallery";
 import { findItemById } from "@/lib/marketplace/queries";
+import { User } from "lucide-react";
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,17 +25,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <article className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
-      <section aria-label="物品照片" className="grid gap-3 sm:grid-cols-2">
-        {item.images.length > 0 ? item.images.map((src, index) => (
-          <div key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-campus-ink/10">
-            <img src={src} alt={`${item.title} 照片 ${index + 1}`} className="h-full w-full object-cover" />
-          </div>
-        )) : (
-          <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-white px-6 text-center text-sm font-bold text-campus-ink/70 shadow-sm ring-1 ring-campus-ink/10 sm:col-span-2">
-            目前沒有上傳任何圖片。
-          </div>
-        )}
-      </section>
+      <ItemGallery images={item.images} title={item.title} />
       <section className="space-y-5 rounded-lg bg-white p-5 shadow-sm ring-1 ring-campus-ink/10 lg:sticky lg:top-24 lg:self-start">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={item.status} />
@@ -42,17 +34,45 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
         </div>
         <div>
           <h1 className="text-3xl font-black leading-tight text-campus-ink">{item.title}</h1>
-          <div className="mt-2 space-y-2">
-            <p className="font-bold text-campus-ink">{item.seller}</p>
-            {item.sellerRating && item.sellerRating.reviewCount > 0 ? (
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
-                <StarRating value={item.sellerRating.averageRating} readonly />
-                <span>（{item.sellerRating.reviewCount} 則評價）</span>
+          <div className="mt-4 flex items-center gap-3 relative group w-fit">
+            <div className="h-10 w-10 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex-shrink-0 flex items-center justify-center cursor-pointer">
+              {item.sellerAvatarUrl ? (
+                <img src={item.sellerAvatarUrl} alt={item.seller} className="h-full w-full object-cover" />
+              ) : (
+                <User size={20} className="text-campus-ink" />
+              )}
+            </div>
+            <div className="cursor-pointer">
+              <p className="font-bold text-campus-ink group-hover:underline">{item.seller}</p>
+              <p className="text-xs text-slate-500">賣家</p>
+            </div>
+
+            {/* Hover Card */}
+            <div className="absolute left-0 top-full z-10 mt-2 w-72 rounded-lg bg-white p-4 shadow-xl ring-1 ring-campus-ink/10 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:-translate-y-1">
+              <div className="flex items-center gap-3 border-b border-campus-ink/5 pb-3">
+                <div className="h-12 w-12 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex-shrink-0 flex items-center justify-center">
+                  {item.sellerAvatarUrl ? (
+                    <img src={item.sellerAvatarUrl} alt={item.seller} className="h-full w-full object-cover" />
+                  ) : (
+                    <User size={24} className="text-campus-ink" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-black text-campus-ink">{item.seller}</p>
+                  {item.sellerRating && item.sellerRating.reviewCount > 0 ? (
+                    <div className="flex flex-wrap items-center gap-1 text-xs text-slate-700">
+                      <StarRating value={item.sellerRating.averageRating} readonly />
+                      <span>({item.sellerRating.reviewCount})</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">尚未累積評價</p>
+                  )}
+                </div>
               </div>
-            ) : (
-              <p className="text-sm text-slate-600">尚未累積評價</p>
-            )}
-            {item.sellerBio ? <p className="text-sm leading-6 text-slate-700">{item.sellerBio}</p> : null}
+              {item.sellerBio && (
+                <p className="mt-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{item.sellerBio}</p>
+              )}
+            </div>
           </div>
         </div>
         <ExchangeSummary exchangeMode={item.exchangeMode} exchangeLabel={item.exchangeLabel} salePrice={item.salePrice} />

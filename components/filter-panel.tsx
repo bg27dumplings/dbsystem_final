@@ -24,7 +24,6 @@ export function FilterPanel({
       className={`rounded-lg bg-white p-4 shadow-sm ring-1 ring-campus-ink/10 ${compact ? "" : "lg:sticky lg:top-24"}`}
       aria-label="物品篩選"
     >
->>>>>>> origin/feat/marketplace-reviews-and-profile
       <div className="space-y-4">
         <div>
           <label htmlFor="keyword" className="text-sm font-bold text-campus-ink">

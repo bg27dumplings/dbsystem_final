@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { User } from "lucide-react";
 
 type ChatMessage = {
   id: string;
@@ -17,6 +18,7 @@ type ChatRoomProps = {
   roomId: string;
   itemTitle: string;
   counterpartName: string;
+  counterpartAvatarUrl?: string;
   counterpartStats: {
     totalDeals: number;
     avgRating: number | null;
@@ -30,6 +32,7 @@ export function ChatRoom({
   roomId,
   itemTitle,
   counterpartName,
+  counterpartAvatarUrl,
   counterpartStats,
   initialMessages,
   currentStudentId
@@ -132,21 +135,57 @@ export function ChatRoom({
       <div className="border-b border-campus-ink/10 p-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/chat"
+            href="/me/chat"
             className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
           >
             ← 返回
           </Link>
-          <div>
-            <h1 className="text-lg font-black text-campus-ink leading-tight">{itemTitle}</h1>
-            <p className="text-xs text-slate-500 mt-1">
-              與 <span className="font-bold text-campus-moss">{counterpartName}</span> 的對話
-              <span className="ml-2 text-slate-400">|</span>
-              <span className="ml-2">已交易 {counterpartStats.totalDeals} 次</span>
-              <span className="ml-2">
-                評價 {counterpartStats.avgRating !== null ? `${counterpartStats.avgRating} ★` : "暫無"}
-              </span>
-            </p>
+          <div className="flex items-center gap-3 ml-2 relative group w-fit">
+            <div className="flex items-center gap-3 cursor-pointer">
+              <div className="h-10 w-10 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex items-center justify-center shrink-0">
+                {counterpartAvatarUrl ? (
+                  <img src={counterpartAvatarUrl} alt={counterpartName} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+                ) : (
+                  <User size={20} className="text-campus-ink transition-transform group-hover:scale-110" />
+                )}
+              </div>
+              <div>
+                <h1 className="text-lg font-black text-campus-ink leading-tight">{itemTitle}</h1>
+                <p className="text-xs text-slate-500 mt-1">
+                  與 <span className="font-bold group-hover:text-campus-moss transition-colors">{counterpartName}</span> 的對話
+                  <span className="ml-2 text-slate-400">|</span>
+                  <span className="ml-2">已交易 {counterpartStats.totalDeals} 次</span>
+                  <span className="ml-2">
+                    評價 {counterpartStats.avgRating !== null ? `${counterpartStats.avgRating} ★` : "暫無"}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div className="absolute left-0 top-full z-10 mt-2 w-80 rounded-lg bg-white p-4 shadow-xl ring-1 ring-campus-ink/10 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:-translate-y-1">
+              <div className="flex justify-between space-x-4">
+                <div className="h-12 w-12 overflow-hidden rounded-full border border-campus-ink/10 bg-campus-ink/5 flex items-center justify-center shrink-0">
+                  {counterpartAvatarUrl ? (
+                    <img src={counterpartAvatarUrl} alt={counterpartName} className="h-full w-full object-cover" />
+                  ) : (
+                    <User size={24} className="text-campus-ink" />
+                  )}
+                </div>
+                <div className="space-y-1 flex-1">
+                  <h4 className="text-sm font-black text-campus-ink">{counterpartName}</h4>
+                  <div className="flex items-center pt-2 gap-4">
+                    <div className="flex items-center text-xs text-slate-500">
+                      <span className="font-bold text-campus-moss mr-1">{counterpartStats.avgRating ?? "0.0"}</span> 評價
+                    </div>
+                    <div className="flex items-center text-xs text-slate-500">
+                      <span className="font-bold text-campus-moss mr-1">{counterpartStats.totalReviews}</span> 則評論
+                    </div>
+                    <div className="flex items-center text-xs text-slate-500">
+                      <span className="font-bold text-campus-moss mr-1">{counterpartStats.totalDeals}</span> 筆交易
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <p className="text-xs text-slate-400 hidden sm:block">即時對話視窗</p>

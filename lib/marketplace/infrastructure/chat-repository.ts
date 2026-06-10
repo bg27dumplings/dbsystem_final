@@ -7,6 +7,7 @@ type ChatRoomRow = RowDataPacket & {
   id: number;
   item_title: string;
   counterpart_name: string;
+  counterpart_avatar_url: string | null;
   last_message: string | null;
   is_seller: number;
   unread_count: number;
@@ -33,6 +34,7 @@ export async function findStudentChatRooms(studentId: number) {
   const [rows] = await pool.execute<ChatRoomRow[]>(
     `SELECT cr.id, i.title AS item_title,
             CASE WHEN cr.buyer_id = ? THEN seller.name ELSE buyer.name END AS counterpart_name,
+            CASE WHEN cr.buyer_id = ? THEN seller.avatar_url ELSE buyer.avatar_url END AS counterpart_avatar_url,
             CASE WHEN cr.seller_id = ? THEN 1 ELSE 0 END AS is_seller,
             (
               SELECT COUNT(*)
@@ -55,7 +57,7 @@ export async function findStudentChatRooms(studentId: number) {
      JOIN students seller ON seller.id = cr.seller_id
      WHERE cr.buyer_id = ? OR cr.seller_id = ?
      ORDER BY cr.updated_at DESC`,
-    [studentId, studentId, studentId, studentId, studentId]
+    [studentId, studentId, studentId, studentId, studentId, studentId]
   );
 
   return rows.map(mapChatRoomSummary);
@@ -72,16 +74,17 @@ export async function findStudentChatRoomById(studentId: number, roomId: string)
     [roomId, studentId]
   );
 
-  const [roomRows] = await pool.execute<(RowDataPacket & { id: number; item_title: string; counterpart_name: string })[]>(
+  const [roomRows] = await pool.execute<(RowDataPacket & { id: number; item_title: string; counterpart_name: string; counterpart_avatar_url: string | null })[]>(
     `SELECT cr.id, i.title AS item_title,
-            CASE WHEN cr.buyer_id = ? THEN seller.name ELSE buyer.name END AS counterpart_name
+            CASE WHEN cr.buyer_id = ? THEN seller.name ELSE buyer.name END AS counterpart_name,
+            CASE WHEN cr.buyer_id = ? THEN seller.avatar_url ELSE buyer.avatar_url END AS counterpart_avatar_url
      FROM chat_rooms cr
      JOIN items i ON i.id = cr.item_id
      JOIN students buyer ON buyer.id = cr.buyer_id
      JOIN students seller ON seller.id = cr.seller_id
      WHERE cr.id = ? AND (cr.buyer_id = ? OR cr.seller_id = ?)
      LIMIT 1`,
-    [studentId, roomId, studentId, studentId]
+    [studentId, studentId, roomId, studentId, studentId]
   );
 
   const room = roomRows[0];
@@ -97,7 +100,7 @@ export async function findStudentChatRoomById(studentId: number, roomId: string)
     [roomId]
   );
 
-  return mapChatRoomDetail(room.id, room.item_title, room.counterpart_name, studentId, messageRows);
+  return mapChatRoomDetail(room.id, room.item_title, room.counterpart_name, room.counterpart_avatar_url, studentId, messageRows);
 }
 
 export async function countUnreadChatMessages(studentId: number): Promise<number> {

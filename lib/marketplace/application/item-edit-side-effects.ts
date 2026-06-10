@@ -25,7 +25,7 @@ export async function cancelPendingAppointmentsAfterItemEdit(itemId: number, ite
     );
 
     for (const row of rows) {
-      await updateAppointmentStatus(connection, row.id, "cancelled");
+      await updateAppointmentStatus(connection, { appointmentId: row.id, nextStatus: "cancelled" });
 
       const roomId = await findOrCreateChatRoom(connection, {
         itemId,
@@ -42,7 +42,7 @@ export async function cancelPendingAppointmentsAfterItemEdit(itemId: number, ite
     await connection.commit();
 
     revalidatePath("/me/appointments");
-    revalidatePath("/chat");
+    revalidatePath("/me/chat");
   } catch {
     await connection.rollback();
   } finally {

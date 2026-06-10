@@ -10,6 +10,7 @@ CREATE TABLE students (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(190) NOT NULL UNIQUE,
   bio VARCHAR(500) NULL,
+  avatar_url VARCHAR(500) NULL,
   password_hash VARCHAR(255) NOT NULL,
   status VARCHAR(24) NOT NULL DEFAULT 'active',
   frozen_reason TEXT NULL,
