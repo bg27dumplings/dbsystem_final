@@ -72,8 +72,20 @@ export function MyItemActions({
     setFormError("");
 
     try {
-      const response = await fetch(`/api/items/${encodeURIComponent(itemId)}/${action}`, {
-        method: "POST"
+      const isStatusChange = action === "deactivate" || action === "reactivate";
+      const method = isStatusChange ? "PATCH" : "DELETE";
+      const url = isStatusChange 
+        ? `/api/items/${encodeURIComponent(itemId)}/status`
+        : `/api/items/${encodeURIComponent(itemId)}`;
+      
+      const body = isStatusChange 
+        ? JSON.stringify({ status: action === "deactivate" ? "removed" : "active" })
+        : undefined;
+
+      const response = await fetch(url, {
+        method,
+        headers: isStatusChange ? { "Content-Type": "application/json" } : undefined,
+        body
       });
       const result = (await response.json()) as ChangeStatusResponse;
 
@@ -108,6 +120,10 @@ export function MyItemActions({
 
   if (itemStatus === "deleted") {
     return <p className="text-sm font-semibold text-slate-600">已刪除的物品不可由前台復原</p>;
+  }
+
+  if (itemStatus === "completed") {
+    return <p className="text-sm font-semibold text-slate-600">已完成交易的物品不可修改</p>;
   }
 
   return (

@@ -232,3 +232,26 @@ export async function findMarketplaceItemActionContext(itemId: string): Promise<
     location: row.location
   };
 }
+
+export async function findStudentWishlistIds(studentId: number): Promise<string[]> {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    `SELECT item_id FROM wishlists WHERE student_id = ? ORDER BY created_at DESC`,
+    [studentId]
+  );
+  return rows.map(r => String(r.item_id));
+}
+
+export async function findStudentWishlistItems(studentId: number): Promise<MarketplaceItem[]> {
+  const pool = getDbPool();
+  const [rows] = await pool.execute<ItemRow[]>(
+    `${SELECT_ITEM_FIELDS}
+     JOIN wishlists w ON w.item_id = i.id
+     WHERE w.student_id = ? AND i.status = 'active'
+     ORDER BY w.created_at DESC`,
+    [studentId]
+  );
+
+  const items = await mapRowsToItems(rows);
+  return items;
+}

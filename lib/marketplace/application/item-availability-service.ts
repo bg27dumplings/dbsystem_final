@@ -95,15 +95,15 @@ export async function rejectRemainingPendingWhenFull(connection: mysql.PoolConne
   );
 }
 
-export async function markItemsRemovedWhenFullyCompleted(connection: mysql.PoolConnection) {
+export async function markItemsCompletedWhenFullyCompleted(connection: mysql.PoolConnection) {
   await connection.execute(
     `UPDATE items i
-     SET i.status = 'removed', i.updated_at = CURRENT_TIMESTAMP
+     SET i.status = 'completed', i.updated_at = CURRENT_TIMESTAMP
      WHERE i.status IN ('active', 'hidden', 'reserved')
        AND i.quantity <= (
          SELECT COUNT(*)
          FROM appointments a
-         WHERE a.item_id = i.id AND a.status = 'completed'
+         WHERE a.item_id = i.id AND a.status IN ('evaluating', 'completed')
        )
        AND NOT EXISTS (
          SELECT 1

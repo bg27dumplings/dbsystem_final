@@ -115,6 +115,20 @@ export async function updateMarketplaceItem(input: {
     fieldErrors[exchangeDetails.field] = exchangeDetails.message;
   }
 
+  // Handle price drop logic
+  let finalOriginalPrice = exchangeDetails.originalPrice;
+  let finalSalePrice = exchangeDetails.salePrice;
+  
+  if (exchangeDetails.ok) {
+    const oldPrice = existingItem.salePrice ?? existingItem.originalPrice;
+    const newPrice = exchangeDetails.salePrice ?? 0;
+    
+    // If it used to have a price, and now it's cheaper or free, keep the old price as originalPrice
+    if (oldPrice > 0 && newPrice < oldPrice && (exchangeDetails.exchangeMode === "price" || exchangeDetails.exchangeMode === "free")) {
+      finalOriginalPrice = existingItem.originalPrice > 0 ? Math.max(existingItem.originalPrice, oldPrice) : oldPrice;
+    }
+  }
+
   if (!description) {
     fieldErrors.description = "請輸入詳細描述。";
   }
@@ -151,8 +165,8 @@ export async function updateMarketplaceItem(input: {
       quantity,
       locationX: input.locationX.trim() ? Number(input.locationX) : null,
       locationY: input.locationY.trim() ? Number(input.locationY) : null,
-      originalPrice: exchangeDetails.originalPrice,
-      salePrice: exchangeDetails.salePrice
+      originalPrice: finalOriginalPrice ?? 0,
+      salePrice: finalSalePrice ?? null
     });
 
     if (input.images.length > 0) {
