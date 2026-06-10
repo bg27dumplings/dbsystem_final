@@ -34,6 +34,7 @@ type ItemFormInitialValues = {
   conditionLabel: string;
   location: string;
   quantity: string;
+  mapPoint?: MapCoordinate;
   exchangeMode: ExchangeMode;
   exchangeValue: string;
   description: string;
