@@ -60,7 +60,7 @@ function get_dashboard_exchange_mode_rows(): array
 {
     return db()->query(
         "SELECT exchange_mode, COUNT(*) AS total
-         FROM items
+         FROM appointments
          GROUP BY exchange_mode"
     )->fetchAll();
 }
