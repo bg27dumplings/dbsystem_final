@@ -120,7 +120,13 @@ new Chart(document.getElementById('memberChart'), {
     labels: monthRows.map(row => row.month),
     datasets: [{ label: '新增會員', data: monthRows.map(row => Number(row.total)), borderColor: '#256D5A', backgroundColor: 'rgba(37,109,90,.15)', tension: .25, fill: true }]
   },
-  options: commonOptions
+  options: {
+    ...commonOptions,
+    scales: {
+      x: { title: { display: true, text: '月份' } },
+      y: { title: { display: true, text: '註冊人數' }, beginAtZero: true, ticks: { stepSize: 1 } }
+    }
+  }
 });
 
 const statusMap = {
@@ -143,8 +149,8 @@ new Chart(document.getElementById('appointmentChart'), {
 const modeMap = {
   'free': '免費',
   'price': '現金',
-  'food': '請客(食物)',
-  'drink': '請客(飲料)',
+  'treat_food': '請客(食物)',
+  'treat_drink': '請客(飲料)',
   'custom': '自訂'
 };
 
@@ -154,7 +160,13 @@ new Chart(document.getElementById('exchangeModeChart'), {
     labels: exchangeModeRows.map(row => modeMap[row.exchange_mode] || row.exchange_mode),
     datasets: [{ label: '物品數量', data: exchangeModeRows.map(row => Number(row.total)), backgroundColor: '#1D5F8D' }]
   },
-  options: commonOptions
+  options: {
+    ...commonOptions,
+    scales: {
+      x: { title: { display: true, text: '交易模式' } },
+      y: { title: { display: true, text: '數量' }, beginAtZero: true, ticks: { stepSize: 1 } }
+    }
+  }
 });
 
 new Chart(document.getElementById('itemMonthChart'), {
@@ -163,7 +175,13 @@ new Chart(document.getElementById('itemMonthChart'), {
     labels: itemMonthRows.map(row => row.month),
     datasets: [{ label: '新增物品', data: itemMonthRows.map(row => Number(row.total)), borderColor: '#E7A83E', backgroundColor: 'rgba(231,168,62,.15)', tension: .25, fill: true }]
   },
-  options: commonOptions
+  options: {
+    ...commonOptions,
+    scales: {
+      x: { title: { display: true, text: '月份' } },
+      y: { title: { display: true, text: '物品數量' }, beginAtZero: true, ticks: { stepSize: 1 } }
+    }
+  }
 });
 </script>
 <?php admin_footer(); ?>

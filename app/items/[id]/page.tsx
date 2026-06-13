@@ -103,7 +103,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           </div>
         </dl>
         <p className="leading-7 text-slate-700">{item.description}</p>
-        <ItemActions itemId={item.id} itemStatus={item.status} />
+        <ItemActions itemId={item.id} itemStatus={item.status} isOwnItem={String(session?.studentId) === item.sellerId} />
       </section>
     </article>
   );

@@ -50,6 +50,39 @@ function readPreviewUrl(file: File) {
   });
 }
 
+async function compressImageForAI(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX_SIZE = 800;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        }
+      } else {
+        if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(dataUrl);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 export function ItemForm({
   categories,
   mode = "create",
@@ -100,7 +133,43 @@ export function ItemForm({
   const [fieldErrors, setFieldErrors] = useState<CreateMarketplaceItemFieldErrors>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const latestPreviewJob = useRef(0);
+
+  async function handleAiAssist() {
+    setIsAiLoading(true);
+    setFormError("");
+    try {
+      let aiImageBase64 = null;
+      if (imagePreviews[0]?.url?.startsWith("data:image")) {
+         aiImageBase64 = await compressImageForAI(imagePreviews[0].url);
+      }
+
+      const response = await fetch("/api/ai/suggest-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          imageBase64: aiImageBase64,
+          hints: title || undefined 
+        })
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setFormError(result.error || "AI 服務失敗");
+      } else {
+        if (result.title) setTitle(result.title);
+        if (result.description) setDescription(result.description);
+        if (result.category) {
+          const match = categories.find(c => c.name.includes(result.category) || result.category.includes(c.name));
+          if (match) setCategoryId(match.id);
+        }
+      }
+    } catch {
+      setFormError("無法連線到 AI 服務。");
+    } finally {
+      setIsAiLoading(false);
+    }
+  }
 
   async function replaceImages(nextFiles: File[]) {
     const jobId = latestPreviewJob.current + 1;
@@ -260,8 +329,18 @@ export function ItemForm({
       </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label htmlFor="title" className="font-bold">
-            物品名稱
+          <label htmlFor="title" className="font-bold flex items-center justify-between">
+            <span>物品名稱</span>
+            {!isEdit && (
+              <button
+                type="button"
+                onClick={handleAiAssist}
+                disabled={isAiLoading || (imagePreviews.length === 0 && !title)}
+                className="text-xs font-black text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded disabled:opacity-50"
+              >
+                {isAiLoading ? "思考中..." : "✨ AI 幫我寫"}
+              </button>
+            )}
           </label>
           <input
             id="title"

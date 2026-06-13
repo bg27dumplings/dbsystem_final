@@ -14,6 +14,9 @@ type CreateMarketplaceItemRecordInput = {
   locationY: number | null;
   originalPrice: number;
   salePrice: number | null;
+  status?: string;
+  isAiBlocked?: boolean;
+  removedReason?: string;
 };
 
 type CreateMarketplaceItemImageRecordInput = {
@@ -53,8 +56,10 @@ export async function insertMarketplaceItem(
       location_y,
       original_price,
       sale_price,
-      status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+      status,
+      is_ai_blocked,
+      removed_reason
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.studentId,
       input.categoryId,
@@ -67,7 +72,10 @@ export async function insertMarketplaceItem(
       input.locationX,
       input.locationY,
       input.originalPrice,
-      input.salePrice
+      input.salePrice,
+      input.status || 'active',
+      input.isAiBlocked ? 1 : 0,
+      input.removedReason || null
     ]
   );
 

@@ -12,7 +12,9 @@ const labels: Record<ItemStatus | AppointmentStatus, string> = {
   completed: "已完成",
   failed: "交易失敗",
   cancelled: "已取消",
-  rejected: "已拒絕"
+  rejected: "已拒絕",
+  ai_blocked: "AI 阻擋上架",
+  pending_review: "審查中"
 };
 
 const styles: Record<string, string> = {
@@ -27,7 +29,9 @@ const styles: Record<string, string> = {
   completed: "bg-campus-moss text-white ring-campus-moss",
   failed: "bg-red-100 text-red-950 ring-red-300",
   cancelled: "bg-slate-200 text-slate-900 ring-slate-300",
-  rejected: "bg-red-100 text-red-950 ring-red-300"
+  rejected: "bg-red-100 text-red-950 ring-red-300",
+  ai_blocked: "bg-rose-100 text-rose-950 ring-rose-300",
+  pending_review: "bg-amber-100 text-amber-950 ring-amber-300"
 };
 
 export function StatusBadge({ status }: { status: ItemStatus | AppointmentStatus }) {

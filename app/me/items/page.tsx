@@ -2,6 +2,8 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { ImageViewer } from "@/components/image-viewer";
 import { StatusBadge } from "@/components/status-badge";
+import { AiBlockedActions } from "@/components/items/ai-blocked-actions";
+import { StatusToggleActions } from "@/components/items/status-toggle-actions";
 import { requireStudentSession } from "@/lib/auth/guards";
 import { findItemsByStudentId } from "@/lib/marketplace/queries";
 
@@ -55,9 +57,21 @@ export default async function MyItemsPage({
                 <h2 className="mt-2 text-xl font-black text-campus-ink">{item.title}</h2>
                 <p className="text-sm text-slate-700">{item.exchangeLabel}</p>
                 <p className="text-sm text-slate-700">數量：{item.quantity}</p>
+                {item.status === "ai_blocked" && (
+                  <div className="mt-3 rounded-md bg-rose-50 p-3 border border-red-100">
+                    <p className="text-sm font-bold text-campus-red mb-1">系統 AI 阻擋上架</p>
+                    <p className="text-sm text-slate-700">原因：{item.removedReason || "違反社群規範或包含敏感內容。"}</p>
+                    <AiBlockedActions itemId={item.id} />
+                  </div>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Link href={`/me/items/${item.id}/edit`} className="rounded-md border border-campus-moss px-3 py-2 font-bold text-campus-moss">編輯</Link>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <StatusToggleActions itemId={item.id} currentStatus={item.status} />
+                {(item.status === "active" || item.status === "removed") && (
+                  <Link href={`/me/items/${item.id}/edit`} className="rounded-md border border-campus-moss px-3 py-2 text-sm font-bold text-campus-moss hover:bg-green-50">
+                    編輯內容
+                  </Link>
+                )}
               </div>
             </article>
           ))}

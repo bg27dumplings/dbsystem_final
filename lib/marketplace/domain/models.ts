@@ -1,4 +1,4 @@
-export type ItemStatus = "active" | "hidden" | "reserved" | "removed" | "completed" | "violation_removed" | "deleted";
+export type ItemStatus = "active" | "hidden" | "reserved" | "removed" | "completed" | "violation_removed" | "deleted" | "ai_blocked" | "pending_review";
 
 export type MapCoordinate = {
   x: number;
@@ -34,6 +34,7 @@ export type MarketplaceItem = {
   sellerAvatarUrl?: string;
   sellerRating?: StudentRatingSummary;
   status: ItemStatus;
+  removedReason?: string;
   originalPrice: number;
   salePrice?: number;
   exchangeMode: MarketplaceExchangeMode;

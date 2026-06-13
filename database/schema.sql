@@ -56,6 +56,7 @@ CREATE TABLE items (
   original_price DECIMAL(12,2) NOT NULL DEFAULT 0,
   sale_price DECIMAL(12,2) NULL,
   status VARCHAR(32) NOT NULL DEFAULT 'active',
+  is_ai_blocked TINYINT(1) NOT NULL DEFAULT 0,
   removed_reason TEXT NULL,
   removed_at DATETIME NULL,
   removed_by BIGINT UNSIGNED NULL,

@@ -298,7 +298,7 @@ export function AppointmentForm({
       </div>
       {exchangeMode === "free" ? (
         <div className="rounded-lg border-2 border-campus-moss bg-campus-moss/5 px-4 py-4 text-sm font-black text-campus-moss mt-6">
-          🎁 此次面交為免費贈送，對方無需支付任何費用或交換物品。
+          🎁 此次面交為免費贈送，無需支付任何費用或交換物品。
         </div>
       ) : null}
       <button

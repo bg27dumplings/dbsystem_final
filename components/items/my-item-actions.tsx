@@ -14,7 +14,8 @@ type ChangeStatusResponse = {
 const ACTION_LABELS = {
   deactivate: "下架",
   reactivate: "重新上架",
-  delete: "刪除"
+  delete: "刪除",
+  request_review: "請求人工審核"
 } as const;
 
 function ManagementButton({
@@ -52,16 +53,18 @@ export function MyItemActions({
   itemStatus: ItemStatus;
 }) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState<null | "deactivate" | "reactivate" | "delete">(null);
+  const [isSubmitting, setIsSubmitting] = useState<null | "deactivate" | "reactivate" | "delete" | "request_review">(null);
   const [formError, setFormError] = useState("");
 
-  async function handleAction(action: "deactivate" | "reactivate" | "delete") {
+  async function handleAction(action: "deactivate" | "reactivate" | "delete" | "request_review") {
     const confirmed = window.confirm(
       action === "delete"
         ? "刪除後前台不可復原，確定要刪除這筆物品嗎？"
         : action === "deactivate"
           ? "確定要下架這筆物品嗎？"
-          : "確定要重新上架這筆物品嗎？"
+          : action === "request_review"
+            ? "確定要請求人工審核嗎？管理員將重新檢視這筆物品。"
+            : "確定要重新上架這筆物品嗎？"
     );
 
     if (!confirmed) {
@@ -72,6 +75,19 @@ export function MyItemActions({
     setFormError("");
 
     try {
+      if (action === "request_review") {
+        const response = await fetch(`/api/items/${encodeURIComponent(itemId)}/request-review`, {
+          method: "POST"
+        });
+        const result = (await response.json()) as ChangeStatusResponse;
+        if (!response.ok || !result.ok) {
+          setFormError(result.formError ?? "申請失敗，請稍後再試。");
+          return;
+        }
+        window.location.reload();
+        return;
+      }
+
       const isStatusChange = action === "deactivate" || action === "reactivate";
       const method = isStatusChange ? "PATCH" : "DELETE";
       const url = isStatusChange 
@@ -126,8 +142,23 @@ export function MyItemActions({
     return <p className="text-sm font-semibold text-slate-600">已完成交易的物品不可修改</p>;
   }
 
+  if (itemStatus === "pending_review") {
+    return <p className="text-sm font-semibold text-slate-600">人工審核中，請耐心等候。</p>;
+  }
+
   return (
     <div className="grid gap-2">
+      {itemStatus === "ai_blocked" ? (
+        <div className="rounded-lg border border-campus-red/20 bg-rose-50 px-4 py-3 mb-2">
+          <p className="text-sm font-semibold text-campus-red mb-2">此物品被 AI 系統判斷疑似包含違規內容，已自動阻擋。</p>
+          <ManagementButton
+            onClick={() => void handleAction("request_review")}
+            disabled={isSubmitting !== null}
+          >
+            {isSubmitting === "request_review" ? "申請中..." : ACTION_LABELS.request_review}
+          </ManagementButton>
+        </div>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <Link href={`/me/items/${itemId}/edit`} className="rounded-md border border-campus-moss px-3 py-2 font-bold text-campus-moss">
           編輯

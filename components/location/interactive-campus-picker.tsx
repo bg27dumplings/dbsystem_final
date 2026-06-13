@@ -148,13 +148,16 @@ export function InteractiveCampusPicker({
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-3"
             >
               {campus === "民生校區" ? (
-                Object.entries(minshengGroups).map(([group, names]) => (
-                  <optgroup key={group} label={group}>
-                    {names.map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </optgroup>
-                ))
+                <>
+                  {Object.entries(minshengGroups).map(([group, names]) => (
+                    <optgroup key={group} label={group}>
+                      {names.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                  <option value="其他">其他</option>
+                </>
               ) : (
                 OTHER_CAMPUS_LOCATIONS[campus]?.map(loc => (
                   <option key={loc} value={loc}>{loc}</option>

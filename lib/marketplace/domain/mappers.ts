@@ -14,6 +14,7 @@ type ItemRowShape = {
   original_price: number;
   sale_price: number | null;
   status: MarketplaceItem["status"];
+  removed_reason: string | null;
   category_name: string;
   seller_name: string;
   image_url: string | null;
@@ -113,6 +114,7 @@ export function mapMarketplaceItem(row: ItemRowShape, images: string[] = [], ext
     sellerAvatarUrl: extras.sellerAvatarUrl,
     sellerRating: extras.sellerRating,
     status: row.status,
+    removedReason: row.removed_reason ?? undefined,
     originalPrice: Number(row.original_price),
     salePrice: row.sale_price === null ? undefined : Number(row.sale_price),
     exchangeMode: exchange.exchangeMode,

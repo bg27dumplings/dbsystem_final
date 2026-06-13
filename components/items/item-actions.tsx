@@ -12,10 +12,12 @@ type OpenChatRoomResponse = {
 
 export function ItemActions({
   itemId,
-  itemStatus
+  itemStatus,
+  isOwnItem
 }: {
   itemId: string;
   itemStatus: ItemStatus;
+  isOwnItem?: boolean;
 }) {
   const [isOpeningChat, setIsOpeningChat] = useState(false);
   const [chatError, setChatError] = useState("");
@@ -50,6 +52,19 @@ export function ItemActions({
     } finally {
       setIsOpeningChat(false);
     }
+  }
+
+  if (isOwnItem) {
+    return (
+      <div className="grid gap-3">
+        <Link
+          href={`/me/items/${encodeURIComponent(itemId)}/edit`}
+          className="inline-flex min-h-12 items-center justify-center rounded-md bg-slate-200 px-4 py-3 font-black text-campus-ink hover:bg-slate-300"
+        >
+          這是您自己的物品，前往管理
+        </Link>
+      </div>
+    );
   }
 
   return (

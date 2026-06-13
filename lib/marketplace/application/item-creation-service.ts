@@ -12,6 +12,7 @@ import { buildExchangeDescriptor, normalizeExchangeMode } from "@/lib/marketplac
 import { findActiveMarketplaceCategories } from "@/lib/marketplace/infrastructure/category-repository";
 import { removeStoredMarketplaceImage, storeMarketplaceImage } from "@/lib/marketplace/infrastructure/item-storage";
 import { insertMarketplaceItem, insertMarketplaceItemImage } from "@/lib/marketplace/infrastructure/item-write-repository";
+import { checkContentSafety } from "@/lib/ai/ollama-service";
 
 function parseNonNegativeNumber(value: string) {
   const trimmed = value.trim();
@@ -160,9 +161,23 @@ export async function createMarketplaceItem(input: CreateMarketplaceItemInput): 
   const storedPaths: string[] = [];
 
   try {
+    const imageBase64s = await Promise.all(
+      validation.value.images.slice(0, 3).map(async (f) => {
+        const buffer = await f.arrayBuffer();
+        return `data:${f.type};base64,${Buffer.from(buffer).toString("base64")}`;
+      })
+    );
+    const safetyCheck = await checkContentSafety(validation.value.title, validation.value.description, imageBase64s);
+    const initialStatus = safetyCheck.safe ? "active" : "ai_blocked";
+
     await connection.beginTransaction();
 
-    const itemId = await insertMarketplaceItem(connection, validation.value);
+    const itemId = await insertMarketplaceItem(connection, { 
+      ...validation.value, 
+      status: initialStatus,
+      isAiBlocked: !safetyCheck.safe,
+      removedReason: !safetyCheck.safe ? safetyCheck.reason : undefined
+    });
 
     for (const [index, image] of validation.value.images.entries()) {
       const storedImage = await storeMarketplaceImage(image);

@@ -19,6 +19,7 @@ type ItemRow = RowDataPacket & {
   original_price: number;
   sale_price: number | null;
   status: MarketplaceItem["status"];
+  removed_reason: string | null;
   category_id: number;
   category_name: string;
   student_id: number;
@@ -57,7 +58,7 @@ export type MarketplaceItemActionContext = {
 };
 
 const SELECT_ITEM_FIELDS = `SELECT i.id, i.title, i.description, i.exchange_note, i.condition_label, i.location,
-        i.quantity, i.location_x, i.location_y, i.original_price, i.sale_price, i.status, i.category_id, i.student_id,
+        i.quantity, i.location_x, i.location_y, i.original_price, i.sale_price, i.status, i.removed_reason, i.category_id, i.student_id,
         c.name AS category_name, s.name AS seller_name, s.bio AS seller_bio, s.avatar_url AS seller_avatar_url, img.public_url AS image_url
  FROM items i
  JOIN categories c ON c.id = i.category_id

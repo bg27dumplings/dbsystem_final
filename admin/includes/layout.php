@@ -35,11 +35,20 @@ function admin_header(string $title): void
         '/admin/items.php' => '物品審查',
         '/admin/logs.php' => '操作紀錄',
     ];
+    $pendingStmt = db()->query('SELECT COUNT(*) FROM items WHERE status = "pending_review"');
+    $pendingCount = (int) $pendingStmt->fetchColumn();
+
     $currentPath = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
     foreach ($links as $href => $label) {
         $isActive = $currentPath === $href || ($href === '/admin/items.php' && $currentPath === '/admin/item_review.php');
         $className = 'nav-link admin-nav-link' . ($isActive ? ' active' : '');
-        echo '<li class="nav-item"><a class="' . e($className) . '" href="' . e($href) . '">' . e($label) . '</a></li>';
+        
+        $displayLabel = e($label);
+        if ($href === '/admin/items.php' && $pendingCount > 0) {
+            $displayLabel .= ' <span class="badge rounded-pill bg-danger ms-1" style="font-size: 0.65rem;">' . $pendingCount . '</span>';
+        }
+        
+        echo '<li class="nav-item"><a class="' . e($className) . '" href="' . e($href) . '">' . $displayLabel . '</a></li>';
     }
     echo '</ul><a class="btn admin-btn admin-btn--ghost btn-sm" href="/admin/logout.php">登出</a></div></div></nav>';
     echo '<main id="admin-main" class="container-fluid admin-main py-4">';
@@ -81,6 +90,8 @@ function admin_status_badge(string $status, string $context = 'generic'): string
         'cancelled' => '已取消',
         'rejected' => '已拒絕',
         'frozen' => '已凍結',
+        'ai_blocked' => 'AI 阻擋',
+        'pending_review' => '待人工審核',
     ];
 
     $contextLabels = [
@@ -105,6 +116,8 @@ function admin_status_badge(string $status, string $context = 'generic'): string
         'cancelled' => 'admin-badge admin-badge--neutral',
         'rejected' => 'admin-badge admin-badge--danger',
         'frozen' => 'admin-badge admin-badge--warning',
+        'ai_blocked' => 'admin-badge admin-badge--danger',
+        'pending_review' => 'admin-badge admin-badge--warning',
     ];
 
     $label = $contextLabels[$context][$status] ?? $genericLabels[$status] ?? $status;
