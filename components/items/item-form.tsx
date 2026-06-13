@@ -1,8 +1,10 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useRef, useState, useMemo } from "react";
+import { ChangeEvent, FormEvent, useRef, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Mic, MicOff } from "lucide-react";
 import { InteractiveCampusPicker } from "@/components/location/interactive-campus-picker";
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import { describedBy } from "@/lib/a11y";
 import type { MapCoordinate } from "@/lib/marketplace/domain/models";
 import {
@@ -135,6 +137,16 @@ export function ItemForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const latestPreviewJob = useRef(0);
+  const activeSpeechFieldRef = useRef<"title" | "description" | null>(null);
+
+  const handleSpeechResult = useCallback((text: string, isFinal: boolean) => {
+    if (activeSpeechFieldRef.current === "title") {
+      setTitle((prev) => prev + text);
+    } else if (activeSpeechFieldRef.current === "description") {
+      setDescription((prev) => prev + text);
+    }
+  }, []);
+  const { isListening, startListening, stopListening, hasSupport } = useSpeechRecognition(handleSpeechResult);
 
   async function handleAiAssist() {
     setIsAiLoading(true);
@@ -331,16 +343,38 @@ export function ItemForm({
         <div className="sm:col-span-2">
           <label htmlFor="title" className="font-bold flex items-center justify-between">
             <span>物品名稱</span>
-            {!isEdit && (
-              <button
-                type="button"
-                onClick={handleAiAssist}
-                disabled={isAiLoading || (imagePreviews.length === 0 && !title)}
-                className="text-xs font-black text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded disabled:opacity-50"
-              >
-                {isAiLoading ? "思考中..." : "✨ AI 幫我寫"}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {hasSupport ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isListening && activeSpeechFieldRef.current === "title") {
+                      stopListening();
+                      activeSpeechFieldRef.current = null;
+                    } else {
+                      activeSpeechFieldRef.current = "title";
+                      startListening();
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1 text-xs font-black px-3 py-1 rounded transition-colors ${
+                    isListening && activeSpeechFieldRef.current === "title" ? "bg-rose-100 text-rose-600 animate-pulse" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {isListening && activeSpeechFieldRef.current === "title" ? <MicOff size={14} /> : <Mic size={14} />}
+                  {isListening && activeSpeechFieldRef.current === "title" ? "聽寫中..." : "語音輸入"}
+                </button>
+              ) : null}
+              {!isEdit && (
+                <button
+                  type="button"
+                  onClick={handleAiAssist}
+                  disabled={isAiLoading || (imagePreviews.length === 0 && !title)}
+                  className="text-xs font-black text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded disabled:opacity-50"
+                >
+                  {isAiLoading ? "思考中..." : "✨ AI 幫我寫"}
+                </button>
+              )}
+            </div>
           </label>
           <input
             id="title"
@@ -527,8 +561,28 @@ export function ItemForm({
           />
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor="description" className="font-bold">
-            詳細描述
+          <label htmlFor="description" className="font-bold flex items-center justify-between">
+            <span>詳細描述</span>
+            {hasSupport ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (isListening && activeSpeechFieldRef.current === "description") {
+                    stopListening();
+                    activeSpeechFieldRef.current = null;
+                  } else {
+                    activeSpeechFieldRef.current = "description";
+                    startListening();
+                  }
+                }}
+                className={`inline-flex items-center gap-1 text-xs font-black px-3 py-1 rounded transition-colors ${
+                  isListening && activeSpeechFieldRef.current === "description" ? "bg-rose-100 text-rose-600 animate-pulse" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {isListening && activeSpeechFieldRef.current === "description" ? <MicOff size={14} /> : <Mic size={14} />}
+                {isListening && activeSpeechFieldRef.current === "description" ? "聽寫中..." : "語音輸入"}
+              </button>
+            ) : null}
           </label>
           <textarea
             id="description"

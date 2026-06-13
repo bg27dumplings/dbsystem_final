@@ -1,7 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Mic, MicOff } from "lucide-react";
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 
 type SendChatMessageResponse = {
   ok: boolean;
@@ -17,6 +19,11 @@ export function ChatComposer({ roomId }: { roomId: string }) {
   const [fieldError, setFieldError] = useState("");
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSpeechResult = useCallback((text: string, isFinal: boolean) => {
+    setBody((prev) => prev + text);
+  }, []);
+  const { isListening, startListening, stopListening, hasSupport } = useSpeechRecognition(handleSpeechResult);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,7 +82,21 @@ export function ChatComposer({ roomId }: { roomId: string }) {
           {fieldError}
         </p>
       ) : null}
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <div>
+          {hasSupport ? (
+            <button
+              type="button"
+              onClick={isListening ? stopListening : startListening}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+                isListening ? "bg-rose-100 text-rose-600 animate-pulse" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+              {isListening ? "停止錄音" : "語音輸入"}
+            </button>
+          ) : null}
+        </div>
         <button
           type="submit"
           disabled={isSubmitting}
