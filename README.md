@@ -39,6 +39,26 @@ Core variables used in this project:
 - `UPLOAD_PUBLIC_PATH`
 - `CAPTCHA_SESSION_KEY`
 - `STUDENT_SESSION_SECRET`
+- `SMTP_USER` and `SMTP_PASS` (for email verification)
+
+## Email SMTP Configuration
+
+To send verification codes during student registration, you must configure SMTP settings in your `.env` file. If these are not provided, the system falls back to **Simulation Mode** and prints verification codes to the console.
+
+**To use Gmail:**
+1. Go to your [Google Account Security settings](https://myaccount.google.com/security).
+2. Enable **2-Step Verification**.
+3. Search for **App passwords**.
+4. Create a new App password for "Mail".
+5. Copy the 16-digit password and add it to your `.env` file:
+
+```env
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-16-digit-app-password"
+```
 
 ## Docker Quick Start
 
