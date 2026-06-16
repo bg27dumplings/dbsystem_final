@@ -50,6 +50,17 @@ async function runDbMigrations(pool: mysql.Pool) {
       await pool.query("ALTER TABLE appointments ADD COLUMN exchange_value VARCHAR(255) NULL AFTER exchange_mode");
     }
 
+    // 1.5 Check & Add appointments unread columns
+    const [unreadCols] = await pool.query<any[]>(
+      `SELECT 1 FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'appointments' AND COLUMN_NAME = 'buyer_unread'`
+    );
+    if (unreadCols.length === 0) {
+      console.log("Migrating appointments table: Adding buyer_unread & seller_unread...");
+      await pool.query("ALTER TABLE appointments ADD COLUMN buyer_unread TINYINT(1) NOT NULL DEFAULT 0");
+      await pool.query("ALTER TABLE appointments ADD COLUMN seller_unread TINYINT(1) NOT NULL DEFAULT 0");
+    }
+
     // 2. Check & Add chat_messages.is_read
     const [chatCols] = await pool.query<any[]>(
       `SELECT 1 FROM information_schema.COLUMNS

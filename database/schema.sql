@@ -125,6 +125,8 @@ CREATE TABLE appointments (
   exchange_value VARCHAR(255) NULL,
   note TEXT NULL,
   status VARCHAR(32) NOT NULL DEFAULT 'pending',
+  buyer_unread TINYINT(1) NOT NULL DEFAULT 0,
+  seller_unread TINYINT(1) NOT NULL DEFAULT 0,
   completed_at DATETIME NULL,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_appointments_item FOREIGN KEY (item_id) REFERENCES items(id),
